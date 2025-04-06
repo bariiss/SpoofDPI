@@ -2,14 +2,7 @@
 
 A simple and fast software designed to bypass **Deep Packet Inspection**.
 
-![image](https://user-images.githubusercontent.com/45588457/148035986-8b0076cc-fefb-48a1-9939-a8d9ab1d6322.png)
-
-# Installation
-See the installation guide for SpoofDPI [here](https://github.com/bariiss/SpoofDPI/blob/main/_docs/INSTALL.md).
-
-<a href="https://repology.org/project/spoofdpi/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/spoofdpi.svg?columns=1" alt="Packaging status">
-</a>  
+![image](https://github.com/bariiss/SpoofDPI/blob/main/images/siber_kurt.png?raw=true)
 
 # Usage
 ```
