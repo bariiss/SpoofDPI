@@ -1,0 +1,21 @@
+services:
+  spoofdpi:
+    image: ghcr.io/bariiss/spoofdpi:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spoofdpi
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    networks:
+      spoofdpi:
+    command: >
+      --enable-doh
+      --window-size 1
+      --dns-addr 8.8.8.8
+
+networks:
+  spoofdpi:
+    name: spoofdpi

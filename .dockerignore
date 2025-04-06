@@ -1,0 +1,15 @@
+_docs/
+README.md
+LICENSE
+install.sh
+
+.git
+.gitignore
+
+*.swp
+*.swo
+*.DS_Store
+.vscode/
+.idea/
+
+spoofdpi
