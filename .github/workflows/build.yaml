@@ -14,10 +14,10 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 env:
   PLATFORMS: linux/amd64,linux/arm64
   VERSION: v0.12.0
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
 jobs:
   build-and-push:
     runs-on: ubuntu-24.04
@@ -37,12 +37,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.MY_PAT_TOKEN }}
-      - name: Generate Unique Tag
-        id: unique_tag
+      - name: Set lowercase image name
+        id: set_image_name
+      - name: Set lowercase image name
+        id: set_image_name
         run: |
-          UNIQUE_TAG="$(date +%s)"
-          echo "Generated unique tag: $UNIQUE_TAG"
-          echo "unique_tag=$UNIQUE_TAG" >> $GITHUB_OUTPUT
+          IMAGE_NAME="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
       - name: Build and Push Multi-Arch Image (with swag + scratch)
         uses: docker/build-push-action@v6
         with:
@@ -51,7 +52,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           push: true
           tags: |
-            ${{ toLower(env.IMAGE_NAME) }}:${{ env.VERSION }}
-            ${{ toLower(env.IMAGE_NAME) }}:latest
+            ${{ steps.set_image_name.outputs.image_name }}:${{ env.VERSION }}
+            ${{ steps.set_image_name.outputs.image_name }}:latest
           no-cache: true
           provenance: false
