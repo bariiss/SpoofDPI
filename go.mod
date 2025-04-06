@@ -1,4 +1,4 @@
-module github.com/xvzc/SpoofDPI
+module github.com/bariiss/SpoofDPI
 
 go 1.21
 

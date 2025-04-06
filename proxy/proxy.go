@@ -7,11 +7,11 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/xvzc/SpoofDPI/dns"
-	"github.com/xvzc/SpoofDPI/packet"
-	"github.com/xvzc/SpoofDPI/proxy/handler"
-	"github.com/xvzc/SpoofDPI/util"
-	"github.com/xvzc/SpoofDPI/util/log"
+	"github.com/bariiss/SpoofDPI/dns"
+	"github.com/bariiss/SpoofDPI/packet"
+	"github.com/bariiss/SpoofDPI/proxy/handler"
+	"github.com/bariiss/SpoofDPI/util"
+	"github.com/bariiss/SpoofDPI/util/log"
 )
 
 const scopeProxy = "PROXY"

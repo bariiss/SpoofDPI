@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/bariiss/SpoofDPI/util"
 	"github.com/rs/zerolog"
-	"github.com/xvzc/SpoofDPI/util"
 )
 
 const (

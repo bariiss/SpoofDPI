@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/bariiss/SpoofDPI/dns/addrselect"
 	"github.com/miekg/dns"
-	"github.com/xvzc/SpoofDPI/dns/addrselect"
 )
 
 type exchangeFunc = func(ctx context.Context, msg *dns.Msg) (*dns.Msg, error)

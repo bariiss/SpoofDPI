@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bariiss/SpoofDPI/dns/resolver"
+	"github.com/bariiss/SpoofDPI/util"
+	"github.com/bariiss/SpoofDPI/util/log"
 	"github.com/miekg/dns"
-	"github.com/xvzc/SpoofDPI/dns/resolver"
-	"github.com/xvzc/SpoofDPI/util"
-	"github.com/xvzc/SpoofDPI/util/log"
 )
 
 const scopeDNS = "DNS"
