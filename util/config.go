@@ -58,8 +58,8 @@ func parseAllowedPattern(patterns StringArray) []*regexp.Regexp {
 }
 
 func PrintColoredBanner() {
-	cyan := putils.LettersFromStringWithStyle("Spoof", pterm.NewStyle(pterm.FgCyan))
-	purple := putils.LettersFromStringWithStyle("DPI", pterm.NewStyle(pterm.FgLightMagenta))
+	cyan := putils.LettersFromStringWithStyle("Siber", pterm.NewStyle(pterm.FgLightRed))
+	purple := putils.LettersFromStringWithStyle("Kurt", pterm.NewStyle(pterm.FgYellow))
 	pterm.DefaultBigText.WithLetters(cyan, purple).Render()
 
 	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
@@ -67,7 +67,15 @@ func PrintColoredBanner() {
 		{Level: 0, Text: "PORT    : " + fmt.Sprint(config.Port)},
 		{Level: 0, Text: "DNS     : " + fmt.Sprint(config.DnsAddr)},
 		{Level: 0, Text: "DEBUG   : " + fmt.Sprint(config.Debug)},
+		{Level: 0, Text: "SILENT  : " + fmt.Sprint(config.Silent)},
+		{Level: 0, Text: "SYSTEM  : " + fmt.Sprint(config.SystemProxy)},
+		{Level: 0, Text: "TIMEOUT : " + fmt.Sprint(config.Timeout)},
+		{Level: 0, Text: "WINDOW  : " + fmt.Sprint(config.WindowSize)},
+		{Level: 0, Text: "DOH     : " + fmt.Sprint(config.EnableDoh)},
+		{Level: 0, Text: "DNSPORT : " + fmt.Sprint(config.DnsPort)},
+		{Level: 0, Text: "DNSV4   : " + fmt.Sprint(config.DnsIPv4Only)},
+		{Level: 0, Text: "ALLOWED : " + fmt.Sprint(config.AllowedPatterns)},
 	}).Render()
 
-	pterm.DefaultBasicText.Println("Press 'CTRL + c' to quit")
+	pterm.DefaultBasicText.Println("Çıkmak için 'CTRL + c' tuşlarına basın.")
 }
