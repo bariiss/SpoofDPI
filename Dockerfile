@@ -1,4 +1,9 @@
-FROM golang:alpine AS builder
+FROM golang:1.21-alpine AS builder
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
 RUN apk add --no-cache ca-certificates
 
