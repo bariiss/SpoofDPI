@@ -14,11 +14,11 @@ services:
     command: >
       --window-size 1
       --port 8080
-      --addr 127.0.0.1
+      --addr 0.0.0.0
       --enable-doh
       --dns-addr 8.8.8.8
       --dns-port 53
-      --system-proxy true
+      --system-proxy false
       --debug false
 
 networks:
