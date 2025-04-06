@@ -1,9 +1,9 @@
 #!/bin/bash
 
-curl "https://api.github.com/repos/xvzc/SpoofDPI/releases/latest" |
+curl "https://api.github.com/repos/bariiss/SpoofDPI/releases/latest" |
     grep '"tag_name":' |
     sed -E 's/.*"([^"]+)".*/\1/' |
-    xargs -I {} curl -OL "https://github.com/xvzc/SpoofDPI/releases/download/"\{\}"/spoofdpi-${1}.tar.gz"
+    xargs -I {} curl -OL "https://github.com/bariiss/SpoofDPI/releases/download/"\{\}"/spoofdpi-${1}.tar.gz"
 
 mkdir -p ~/.spoofdpi/bin
 

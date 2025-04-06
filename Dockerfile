@@ -6,7 +6,7 @@ ARG TARGETOS
 ARG TARGETARCH
 
 WORKDIR /go
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install -ldflags '-w -s -extldflags "-static"' -tags timetzdata github.com/bariiss/SpoofDPI/cmd/spoofdpi@latest
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install -ldflags '-w -s -extldflags "-static"' -tags timetzdata github.com/bariiss/SpoofDPI/cmd/spoofdpi@latest
 
 FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
