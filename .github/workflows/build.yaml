@@ -39,8 +39,6 @@ jobs:
           password: ${{ secrets.MY_PAT_TOKEN }}
       - name: Set lowercase image name
         id: set_image_name
-      - name: Set lowercase image name
-        id: set_image_name
         run: |
           IMAGE_NAME="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
           echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
