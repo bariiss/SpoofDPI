@@ -49,7 +49,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           push: true
           tags: |
-            ghcr.io/konamata/bariiss/spoofdpi:v${{ steps.unique_tag.outputs.unique_tag }}
-            ghcr.io/konamata/bariiss/spoofdpi:latest
+            ghcr.io/bariiss/spoofdpi:v${{ steps.unique_tag.outputs.unique_tag }}
+            ghcr.io/bariiss/spoofdpi:latest
           no-cache: true
           provenance: false
