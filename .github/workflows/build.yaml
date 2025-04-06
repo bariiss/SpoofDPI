@@ -51,7 +51,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ toLower(env.IMAGE_NAME) }}:${{ env.VERSION }}
+            ${{ toLower(env.IMAGE_NAME) }}:latest
           no-cache: true
           provenance: false
