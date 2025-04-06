@@ -1,9 +1,19 @@
 FROM golang:alpine AS builder
 
-WORKDIR /go
-RUN go install -ldflags '-w -s -extldflags "-static"' -tags timetzdata github.com/bariiss/SpoofDPI/cmd/spoofdpi@latest
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags '-w -s -extldflags "-static"' -tags timetzdata -o spoofdpi ./cmd/spoofdpi
 
 FROM scratch
+
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /go/bin/spoofdpi /
+COPY --from=builder /app/spoofdpi /
+
 ENTRYPOINT ["/spoofdpi"]

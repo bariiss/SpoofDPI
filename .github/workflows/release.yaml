@@ -56,7 +56,7 @@ jobs:
         GOOS: darwin
         GOARCH: amd64
       run: |
-        go build -ldflags="-w -s" github.com/xvzc/SpoofDPI/cmd/spoofdpi 
+        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
         tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
 
@@ -65,7 +65,7 @@ jobs:
         GOOS: darwin
         GOARCH: arm64
       run: |
-        go build -ldflags="-w -s" github.com/xvzc/SpoofDPI/cmd/spoofdpi 
+        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
         tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
 
@@ -74,7 +74,7 @@ jobs:
         GOOS: linux
         GOARCH: amd64
       run: |
-        go build -ldflags="-w -s" github.com/xvzc/SpoofDPI/cmd/spoofdpi 
+        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
         tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
 
@@ -83,7 +83,7 @@ jobs:
         GOOS: linux
         GOARCH: arm
       run: |
-        go build -ldflags="-w -s" github.com/xvzc/SpoofDPI/cmd/spoofdpi 
+        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
         tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
 
@@ -92,7 +92,7 @@ jobs:
         GOOS: linux
         GOARCH: arm64
       run: |
-        go build -ldflags="-w -s" github.com/xvzc/SpoofDPI/cmd/spoofdpi 
+        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
         tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
 
@@ -101,7 +101,7 @@ jobs:
         GOOS: linux
         GOARCH: mips
       run: |
-        go build -ldflags="-w -s" github.com/xvzc/SpoofDPI/cmd/spoofdpi 
+        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
         tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
 
@@ -110,7 +110,7 @@ jobs:
         GOOS: linux
         GOARCH: mipsle
       run: |
-        go build -ldflags="-w -s" github.com/xvzc/SpoofDPI/cmd/spoofdpi 
+        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
         tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
 
@@ -119,6 +119,6 @@ jobs:
         GOOS: windows
         GOARCH: amd64
       run: |
-        go build -ldflags="-w -s" -o "spoofdpi-$GOOS-$GOARCH.exe" github.com/xvzc/SpoofDPI/cmd/spoofdpi
+        go build -ldflags="-w -s" -o "spoofdpi-$GOOS-$GOARCH.exe" github.com/bariiss/SpoofDPI/cmd/spoofdpi
         gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.exe"
 
