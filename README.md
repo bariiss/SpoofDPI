@@ -1,4 +1,4 @@
-# SpoofDPI
+# SiberKurt
 
 A simple and fast software designed to bypass **Deep Packet Inspection**.
 
