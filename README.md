@@ -1,8 +1,8 @@
-# SiberKurt
+# SpoofDPI
 
 A simple and fast software designed to bypass **Deep Packet Inspection**.
 
-![image](https://github.com/bariiss/SpoofDPI/blob/main/images/siber_kurt.png?raw=true)
+![image](https://user-images.githubusercontent.com/45588457/148035986-8b0076cc-fefb-48a1-9939-a8d9ab1d6322.png)
 
 # Usage
 ```

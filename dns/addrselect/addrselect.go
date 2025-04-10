@@ -52,7 +52,10 @@ func srcAddrs(addrs []net.IPAddr) []netip.Addr {
 			if src, ok := c.LocalAddr().(*net.UDPAddr); ok {
 				srcs[i], _ = netip.AddrFromSlice(src.IP)
 			}
-			c.Close()
+			err := c.Close()
+			if err != nil {
+				return nil
+			}
 		}
 	}
 	return srcs
@@ -306,12 +309,9 @@ func (t policyTable) Classify(ip netip.Addr) policyTableEntry {
 type scope uint8
 
 const (
-	scopeInterfaceLocal scope = 0x1
-	scopeLinkLocal      scope = 0x2
-	scopeAdminLocal     scope = 0x4
-	scopeSiteLocal      scope = 0x5
-	scopeOrgLocal       scope = 0x8
-	scopeGlobal         scope = 0xe
+	scopeLinkLocal scope = 0x2
+	scopeSiteLocal scope = 0x5
+	scopeGlobal    scope = 0xe
 )
 
 func classifyScope(ip netip.Addr) scope {

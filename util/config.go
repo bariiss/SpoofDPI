@@ -58,11 +58,14 @@ func parseAllowedPattern(patterns StringArray) []*regexp.Regexp {
 }
 
 func PrintColoredBanner() {
-	cyan := putils.LettersFromStringWithStyle("Siber", pterm.NewStyle(pterm.FgLightRed))
-	purple := putils.LettersFromStringWithStyle("Kurt", pterm.NewStyle(pterm.FgYellow))
-	pterm.DefaultBigText.WithLetters(cyan, purple).Render()
+	cyan := putils.LettersFromStringWithStyle("Spoof", pterm.NewStyle(pterm.FgCyan))
+	purple := putils.LettersFromStringWithStyle("DPI", pterm.NewStyle(pterm.FgMagenta))
+	err := pterm.DefaultBigText.WithLetters(cyan, purple).Render()
+	if err != nil {
+		return
+	}
 
-	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
+	err = pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
 		{Level: 0, Text: "ADDR    : " + fmt.Sprint(config.Addr)},
 		{Level: 0, Text: "PORT    : " + fmt.Sprint(config.Port)},
 		{Level: 0, Text: "DNS     : " + fmt.Sprint(config.DnsAddr)},
@@ -76,6 +79,9 @@ func PrintColoredBanner() {
 		{Level: 0, Text: "DNSV4   : " + fmt.Sprint(config.DnsIPv4Only)},
 		{Level: 0, Text: "ALLOWED : " + fmt.Sprint(config.AllowedPatterns)},
 	}).Render()
+	if err != nil {
+		return
+	}
 
 	pterm.DefaultBasicText.Println("Çıkmak için 'CTRL + c' tuşlarına basın.")
 }

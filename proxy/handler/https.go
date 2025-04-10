@@ -48,7 +48,10 @@ func (h *HttpsHandler) Serve(ctx context.Context, lConn *net.TCPConn, initPkt *p
 
 	rConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: net.ParseIP(ip), Port: h.port})
 	if err != nil {
-		lConn.Close()
+		err := lConn.Close()
+		if err != nil {
+			return
+		}
 		logger.Debug().Msgf("%s", err)
 		return
 	}
@@ -98,8 +101,14 @@ func (h *HttpsHandler) communicate(ctx context.Context, from *net.TCPConn, to *n
 	logger := log.GetCtxLogger(ctx)
 
 	defer func() {
-		from.Close()
-		to.Close()
+		err := from.Close()
+		if err != nil {
+			return
+		}
+		err = to.Close()
+		if err != nil {
+			return
+		}
 
 		logger.Debug().Msgf("closing proxy connection: %s -> %s", fd, td)
 	}()
@@ -111,7 +120,7 @@ func (h *HttpsHandler) communicate(ctx context.Context, from *net.TCPConn, to *n
 			logger.Debug().Msgf("error while setting connection deadline for %s: %s", fd, err)
 		}
 
-		bytesRead, err := ReadBytes(ctx, from, buf)
+		bytesRead, err := ReadBytes(from, buf)
 		if err != nil {
 			logger.Debug().Msgf("error reading from %s: %s", fd, err)
 			return
@@ -128,7 +137,7 @@ func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
 	logger := log.GetCtxLogger(ctx)
 
 	var chunks [][]byte
-	var raw []byte = bytes
+	var raw = bytes
 
 	logger.Debug().Msgf("window-size: %d", size)
 

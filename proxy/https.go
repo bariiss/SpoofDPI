@@ -17,7 +17,7 @@ func (pxy *Proxy) handleHttps(ctx context.Context, lConn *net.TCPConn, exploit b
 	logger := log.GetCtxLogger(ctx)
 
 	// Create a connection to the requested server
-	var port int = 443
+	var port = 443
 	var err error
 	if initPkt.Port() != "" {
 		port, err = strconv.Atoi(initPkt.Port())
@@ -28,7 +28,10 @@ func (pxy *Proxy) handleHttps(ctx context.Context, lConn *net.TCPConn, exploit b
 
 	rConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
-		lConn.Close()
+		err := lConn.Close()
+		if err != nil {
+			return
+		}
 		logger.Debug().Msgf("%s", err)
 		return
 	}
@@ -78,7 +81,7 @@ func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
 	logger := log.GetCtxLogger(ctx)
 
 	var chunks [][]byte
-	var raw []byte = bytes
+	var raw = bytes
 
 	logger.Debug().Msgf("window-size: %d", size)
 

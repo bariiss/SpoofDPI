@@ -9,14 +9,9 @@ import (
 type TLSMessageType byte
 
 const (
-	TLSMaxPayloadLen    uint16         = 16384 // 16 KB
-	TLSHeaderLen                       = 5
-	TLSInvalid          TLSMessageType = 0x0
-	TLSChangeCipherSpec TLSMessageType = 0x14
-	TLSAlert            TLSMessageType = 0x15
-	TLSHandshake        TLSMessageType = 0x16
-	TLSApplicationData  TLSMessageType = 0x17
-	TLSHeartbeat        TLSMessageType = 0x18
+	TLSMaxPayloadLen uint16         = 16384 // 16 KB
+	TLSHeaderLen                    = 5
+	TLSHandshake     TLSMessageType = 0x16
 )
 
 type TLSMessage struct {

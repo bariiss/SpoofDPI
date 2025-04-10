@@ -75,7 +75,10 @@ func (pxy *Proxy) Start(ctx context.Context) {
 			pkt, err := packet.ReadHttpRequest(conn)
 			if err != nil {
 				logger.Debug().Msgf("error while parsing request: %s", err)
-				conn.Close()
+				err := conn.Close()
+				if err != nil {
+					return
+				}
 				return
 			}
 
@@ -85,7 +88,10 @@ func (pxy *Proxy) Start(ctx context.Context) {
 
 			if !pkt.IsValidMethod() {
 				logger.Debug().Msgf("unsupported method: %s", pkt.Method())
-				conn.Close()
+				err := conn.Close()
+				if err != nil {
+					return
+				}
 				return
 			}
 
@@ -95,15 +101,21 @@ func (pxy *Proxy) Start(ctx context.Context) {
 			ip, err := pxy.resolver.ResolveHost(ctx, pkt.Domain(), pxy.enableDoh, useSystemDns)
 			if err != nil {
 				logger.Debug().Msgf("error while dns lookup: %s %s", pkt.Domain(), err)
-				conn.Write([]byte(pkt.Version() + " 502 Bad Gateway\r\n\r\n"))
-				conn.Close()
+				_, _ = conn.Write([]byte(pkt.Version() + " 502 Bad Gateway\r\n\r\n"))
+				err := conn.Close()
+				if err != nil {
+					return
+				}
 				return
 			}
 
 			// Avoid recursively querying self
 			if pkt.Port() == strconv.Itoa(pxy.port) && isLoopedRequest(ctx, net.ParseIP(ip)) {
 				logger.Error().Msg("looped request has been detected. aborting.")
-				conn.Close()
+				err := conn.Close()
+				if err != nil {
+					return
+				}
 				return
 			}
 

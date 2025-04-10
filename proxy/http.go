@@ -20,7 +20,7 @@ func (pxy *Proxy) handleHttp(ctx context.Context, lConn *net.TCPConn, pkt *packe
 	pkt.Tidy()
 
 	// Create a connection to the requested server
-	var port int = 80
+	var port = 80
 	var err error
 	if pkt.Port() != "" {
 		port, err = strconv.Atoi(pkt.Port())
@@ -31,7 +31,10 @@ func (pxy *Proxy) handleHttp(ctx context.Context, lConn *net.TCPConn, pkt *packe
 
 	rConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
-		lConn.Close()
+		err := lConn.Close()
+		if err != nil {
+			return
+		}
 		logger.Debug().Msgf("%s", err)
 		return
 	}

@@ -151,6 +151,9 @@ func parse(rdr io.Reader) (*HttpRequest, error) {
 		p.path = "/"
 	}
 
-	request.Body.Close()
+	err = request.Body.Close()
+	if err != nil {
+		return nil, err
+	}
 	return p, nil
 }

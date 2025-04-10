@@ -12,16 +12,15 @@ import (
 )
 
 const (
-	BufferSize   = 1024
-	TLSHeaderLen = 5
+	BufferSize = 1024
 )
 
-func ReadBytes(ctx context.Context, conn *net.TCPConn, dest []byte) ([]byte, error) {
-	n, err := readBytesInternal(ctx, conn, dest)
+func ReadBytes(conn *net.TCPConn, dest []byte) ([]byte, error) {
+	n, err := readBytesInternal(conn, dest)
 	return dest[:n], err
 }
 
-func readBytesInternal(ctx context.Context, conn *net.TCPConn, dest []byte) (int, error) {
+func readBytesInternal(conn *net.TCPConn, dest []byte) (int, error) {
 	totalRead, err := conn.Read(dest)
 	if err != nil {
 		var opError *net.OpError
@@ -40,8 +39,14 @@ func Serve(ctx context.Context, from *net.TCPConn, to *net.TCPConn, proto string
 	logger := log.GetCtxLogger(ctx)
 
 	defer func() {
-		from.Close()
-		to.Close()
+		err := from.Close()
+		if err != nil {
+			return
+		}
+		err = to.Close()
+		if err != nil {
+			return
+		}
 
 		logger.Debug().Msgf("closing proxy connection: %s -> %s", fd, td)
 	}()
@@ -49,12 +54,15 @@ func Serve(ctx context.Context, from *net.TCPConn, to *net.TCPConn, proto string
 	buf := make([]byte, BufferSize)
 	for {
 		if timeout > 0 {
-			from.SetReadDeadline(
+			err := from.SetReadDeadline(
 				time.Now().Add(time.Millisecond * time.Duration(timeout)),
 			)
+			if err != nil {
+				return
+			}
 		}
 
-		bytesRead, err := ReadBytes(ctx, from, buf)
+		bytesRead, err := ReadBytes(from, buf)
 		if err != nil {
 			if err == io.EOF {
 				logger.Debug().Msgf("finished reading from %s", fd)

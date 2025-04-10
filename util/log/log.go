@@ -61,7 +61,7 @@ func formatFieldValue[T any](vs map[string]any, format string, field string) {
 
 type ctxHook struct{}
 
-func (h ctxHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+func (h ctxHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
 	if scope, ok := util.GetScopeFromCtx(e.GetCtx()); ok {
 		e.Str(scopeFieldName, scope)
 	}

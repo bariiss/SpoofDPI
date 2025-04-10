@@ -31,7 +31,7 @@ func (h *HttpHandler) Serve(ctx context.Context, lConn *net.TCPConn, pkt *packet
 	logger := log.GetCtxLogger(ctx)
 
 	// Create a connection to the requested server
-	var port int = 80
+	var port = 80
 	var err error
 	if pkt.Port() != "" {
 		port, err = strconv.Atoi(pkt.Port())
@@ -42,7 +42,10 @@ func (h *HttpHandler) Serve(ctx context.Context, lConn *net.TCPConn, pkt *packet
 
 	rConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
-		lConn.Close()
+		err := lConn.Close()
+		if err != nil {
+			return
+		}
 		logger.Debug().Msgf("%s", err)
 		return
 	}
@@ -64,8 +67,14 @@ func (h *HttpHandler) deliverRequest(ctx context.Context, from *net.TCPConn, to 
 	logger := log.GetCtxLogger(ctx)
 
 	defer func() {
-		from.Close()
-		to.Close()
+		err := from.Close()
+		if err != nil {
+			return
+		}
+		err = to.Close()
+		if err != nil {
+			return
+		}
 
 		logger.Debug().Msgf("closing proxy connection: %s -> %s", fd, td)
 	}()
@@ -96,8 +105,14 @@ func (h *HttpHandler) deliverResponse(ctx context.Context, from *net.TCPConn, to
 	logger := log.GetCtxLogger(ctx)
 
 	defer func() {
-		from.Close()
-		to.Close()
+		err := from.Close()
+		if err != nil {
+			return
+		}
+		err = to.Close()
+		if err != nil {
+			return
+		}
 
 		logger.Debug().Msgf("closing proxy connection: %s -> %s", fd, td)
 	}()
@@ -109,7 +124,7 @@ func (h *HttpHandler) deliverResponse(ctx context.Context, from *net.TCPConn, to
 			logger.Debug().Msgf("error while setting connection deadline for %s: %s", fd, err)
 		}
 
-		bytesRead, err := ReadBytes(ctx, from, buf)
+		bytesRead, err := ReadBytes(from, buf)
 		if err != nil {
 			logger.Debug().Msgf("error reading from %s: %s", fd, err)
 			return
