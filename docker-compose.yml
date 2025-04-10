@@ -8,18 +8,18 @@ services:
     restart: unless-stopped
     pull_policy: always
     ports:
-      - "8080:8080"
+      - "${DOCKER_ADDR}:${DOCKER_PORT}:${APP_PORT}"
     networks:
       spoofdpi:
     command: >
-      --window-size 1
-      --port 8080
-      --addr 0.0.0.0
-      --enable-doh
-      --dns-addr 8.8.8.8
-      --dns-port 53
-      --system-proxy false
-      --debug false
+      --window-size ${WINDOW_SIZE}
+      --port ${APP_PORT}
+      --addr ${APP_ADDR}
+      --enable-doh ${DOH_ENABLED}
+      --dns-addr ${DNS_ADDR}
+      --dns-port ${DNS_PORT}
+      --system-proxy ${SYSTEM_PROXY}
+      --debug ${DEBUG_MODE}
 
 networks:
   spoofdpi:
