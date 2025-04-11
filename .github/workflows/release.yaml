@@ -1,27 +1,31 @@
-name: Release drafter
+name: Release Drafter
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+
+env:
+  GO_VERSION: 1.24.2
 
 jobs:
   draft_release:
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.release.outputs.tag_name }}
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
+
       - name: Read version
         id: read_version
-        run: |
-          echo "version=$(cat version/VERSION | tr -d '[:space:]')" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat version/VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
       - name: Print version
         run: |
-          echo ${{ steps.read_version.outputs.version }}
+          echo "Version: ${{ steps.read_version.outputs.version }}"
+
       - uses: release-drafter/release-drafter@v6
         id: release
         with:
@@ -32,93 +36,56 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_and_publish:
-    runs-on: ubuntu-latest
     needs: draft_release
-    name: Release linux/amd64
-    permissions:
-      contents: write
-      pull-requests: write
-    env: 
+    runs-on: ubuntu-latest
+    env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TAG_NAME: ${{ needs.draft_release.outputs.tag_name }}
       CGO_ENABLED: 0
+
+    strategy:
+      matrix:
+        include:
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: mips
+          - goos: linux
+            goarch: mipsle
+          - goos: windows
+            goarch: amd64
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: 1.24
-    - name: Display Go version
-      run: go version
+      - uses: actions/checkout@v4
 
-    - name: darwin/amd64
-      env: 
-        GOOS: darwin
-        GOARCH: amd64
-      run: |
-        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
-        tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-    - name: darwin/arm64
-      env: 
-        GOOS: darwin
-        GOARCH: arm64
-      run: |
-        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
-        tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
+      - name: Display Go version
+        run: go version
 
-    - name: linux/amd64
-      env: 
-        GOOS: linux
-        GOARCH: amd64
-      run: |
-        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
-        tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
-
-    - name: linux/arm
-      env: 
-        GOOS: linux
-        GOARCH: arm
-      run: |
-        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
-        tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
-
-    - name: linux/arm64
-      env: 
-        GOOS: linux
-        GOARCH: arm64
-      run: |
-        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
-        tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
-
-    - name: linux/mips
-      env: 
-        GOOS: linux
-        GOARCH: mips
-      run: |
-        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
-        tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
-
-    - name: linux/mipsle
-      env: 
-        GOOS: linux
-        GOARCH: mipsle
-      run: |
-        go build -ldflags="-w -s" github.com/bariiss/SpoofDPI/cmd/spoofdpi 
-        tar -zcvf "spoofdpi-$GOOS-$GOARCH.tar.gz" ./spoofdpi && rm -rf ./spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.tar.gz"
-
-    - name: windows/amd64
-      env: 
-        GOOS: windows
-        GOARCH: amd64
-      run: |
-        go build -ldflags="-w -s" -o "spoofdpi-$GOOS-$GOARCH.exe" github.com/bariiss/SpoofDPI/cmd/spoofdpi
-        gh release upload $TAG_NAME "./spoofdpi-$GOOS-$GOARCH.exe"
-
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          OUTPUT_NAME="spoofdpi-${GOOS}-${GOARCH}"
+          if [ "$GOOS" = "windows" ]; then
+            go build -ldflags="-w -s" -o "${OUTPUT_NAME}.exe" ./cmd/spoofdpi
+            gh release upload "$TAG_NAME" "${OUTPUT_NAME}.exe"
+          else
+            go build -ldflags="-w -s" -o spoofdpi ./cmd/spoofdpi
+            tar -zcvf "${OUTPUT_NAME}.tar.gz" spoofdpi
+            gh release upload "$TAG_NAME" "${OUTPUT_NAME}.tar.gz"
+            rm spoofdpi
+          fi
