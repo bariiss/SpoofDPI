@@ -25,6 +25,7 @@ type Config struct {
 
 var config *Config
 
+// GetConfig returns the singleton instance of Config.
 func GetConfig() *Config {
 	if config == nil {
 		config = new(Config)
@@ -32,6 +33,7 @@ func GetConfig() *Config {
 	return config
 }
 
+// Load populates the Config struct with values from the Args struct.
 func (c *Config) Load(args *Args) {
 	c.Addr = args.Addr
 	c.Port = int(args.Port)
@@ -47,6 +49,7 @@ func (c *Config) Load(args *Args) {
 	c.WindowSize = int(args.WindowSize)
 }
 
+// parseAllowedPattern compiles the allowed patterns into regular expressions.
 func parseAllowedPattern(patterns StringArray) []*regexp.Regexp {
 	var allowedPatterns []*regexp.Regexp
 
@@ -57,6 +60,7 @@ func parseAllowedPattern(patterns StringArray) []*regexp.Regexp {
 	return allowedPatterns
 }
 
+// PrintColoredBanner prints a colored banner with the configuration details.
 func PrintColoredBanner() {
 	cyan := putils.LettersFromStringWithStyle("Spoof", pterm.NewStyle(pterm.FgCyan))
 	purple := putils.LettersFromStringWithStyle("DPI", pterm.NewStyle(pterm.FgMagenta))
@@ -83,5 +87,5 @@ func PrintColoredBanner() {
 		return
 	}
 
-	pterm.DefaultBasicText.Println("Çıkmak için 'CTRL + c' tuşlarına basın.")
+	pterm.DefaultBasicText.Println("Press 'CTRL + c' to exit.")
 }

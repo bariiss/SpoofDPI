@@ -13,6 +13,7 @@ import (
 
 const protoHTTP = "HTTP"
 
+// handleHttp handles HTTP requests by establishing a connection to the requested server.
 func (pxy *Proxy) handleHttp(ctx context.Context, lConn *net.TCPConn, pkt *packet.HttpRequest, ip string) {
 	ctx = util.GetCtxWithScope(ctx, protoHTTP)
 	logger := log.GetCtxLogger(ctx)

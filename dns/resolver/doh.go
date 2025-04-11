@@ -20,6 +20,7 @@ type DOHResolver struct {
 	client   *http.Client
 }
 
+// NewDOHResolver creates a new DOHResolver instance.
 func NewDOHResolver(host string) *DOHResolver {
 	c := &http.Client{
 		Timeout: 5 * time.Second,
@@ -45,16 +46,19 @@ func NewDOHResolver(host string) *DOHResolver {
 	}
 }
 
+// Resolve performs a DNS lookup for the given host and returns the IP addresses.
 func (r *DOHResolver) Resolve(ctx context.Context, host string, qTypes []uint16) ([]net.IPAddr, error) {
 	resultCh := lookupAllTypes(ctx, host, qTypes, r.exchange)
 	addrs, err := processResults(ctx, resultCh)
 	return addrs, err
 }
 
+// String returns a string representation of the DOHResolver.
 func (r *DOHResolver) String() string {
 	return fmt.Sprintf("doh resolver(%s)", r.upstream)
 }
 
+// exchange sends a DNS query to the server and returns the response.
 func (r *DOHResolver) exchange(ctx context.Context, msg *dns.Msg) (*dns.Msg, error) {
 	pack, err := msg.Pack()
 	if err != nil {

@@ -26,15 +26,18 @@ type Args struct {
 
 type StringArray []string
 
+// String implements the flag.Value interface for StringArray.
 func (arr *StringArray) String() string {
 	return fmt.Sprintf("%s", *arr)
 }
 
+// Set implements the flag.Value interface for StringArray.
 func (arr *StringArray) Set(value string) error {
 	*arr = append(*arr, value)
 	return nil
 }
 
+// ParseArgs parses command line arguments and returns an Args struct.
 func ParseArgs() *Args {
 	args := new(Args)
 
@@ -74,6 +77,7 @@ type unsigned interface {
 	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
 }
 
+// uintNVar registers a command line flag with a uintN type value.
 func uintNVar[T unsigned](p *T, name string, value T, usage string) {
 	flag.CommandLine.Var(newUintNValue(value, p), name, usage)
 }
@@ -82,11 +86,13 @@ type uintNValue[T unsigned] struct {
 	val *T
 }
 
+// uintNValue is a flag.Value implementation for unsigned integer types.
 func newUintNValue[T unsigned](val T, p *T) *uintNValue[T] {
 	*p = val
 	return &uintNValue[T]{val: p}
 }
 
+// Set sets the value of the flag from a string.
 func (u *uintNValue[T]) Set(s string) error {
 	size := int(unsafe.Sizeof(*u.val) * 8)
 	v, err := strconv.ParseUint(s, 0, size)
@@ -97,6 +103,7 @@ func (u *uintNValue[T]) Set(s string) error {
 	return err
 }
 
+// Get returns the value of the flag.
 func (u *uintNValue[T]) Get() any {
 	if u.val == nil {
 		return T(0)
@@ -104,6 +111,7 @@ func (u *uintNValue[T]) Get() any {
 	return *u.val
 }
 
+// String returns the string representation of the flag value.
 func (u *uintNValue[T]) String() string {
 	if u.val == nil {
 		return "0"

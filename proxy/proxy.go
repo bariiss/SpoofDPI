@@ -42,6 +42,7 @@ func New(config *util.Config) *Proxy {
 	}
 }
 
+// Start starts the proxy server and listens for incoming connections.
 func (pxy *Proxy) Start(ctx context.Context) {
 	ctx = util.GetCtxWithScope(ctx, scopeProxy)
 	logger := log.GetCtxLogger(ctx)
@@ -131,6 +132,7 @@ func (pxy *Proxy) Start(ctx context.Context) {
 	}
 }
 
+// patternMatches checks if the given bytes match any of the allowed patterns.
 func (pxy *Proxy) patternMatches(bytes []byte) bool {
 	if pxy.allowedPattern == nil {
 		return true
@@ -145,6 +147,7 @@ func (pxy *Proxy) patternMatches(bytes []byte) bool {
 	return false
 }
 
+// isLoopedRequest checks if the given IP address is a loop back address or matches any of the local addresses.
 func isLoopedRequest(ctx context.Context, ip net.IP) bool {
 	if ip.IsLoopback() {
 		return true

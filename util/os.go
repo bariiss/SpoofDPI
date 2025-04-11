@@ -22,6 +22,7 @@ const (
 		" -system-proxy=false."
 )
 
+// SetOsProxy sets the system proxy settings on macOS.
 func SetOsProxy(port uint16) error {
 	if runtime.GOOS != darwinOS {
 		return nil
@@ -35,6 +36,7 @@ func SetOsProxy(port uint16) error {
 	return setProxy(getProxyTypes(), network, "127.0.0.1", port)
 }
 
+// UnsetOsProxy unsets the system proxy settings on macOS.
 func UnsetOsProxy() error {
 	if runtime.GOOS != darwinOS {
 		return nil
@@ -48,6 +50,7 @@ func UnsetOsProxy() error {
 	return unsetProxy(getProxyTypes(), network)
 }
 
+// getDefaultNetwork retrieves the default network interface on macOS.
 func getDefaultNetwork() (string, error) {
 	network, err := exec.Command("sh", "-c", getDefaultNetworkCMD).Output()
 	if err != nil {
@@ -58,10 +61,12 @@ func getDefaultNetwork() (string, error) {
 	return strings.TrimSpace(string(network)), nil
 }
 
+// getProxyTypes returns the types of proxies that can be set on macOS.
 func getProxyTypes() []string {
 	return []string{"webproxy", "securewebproxy"}
 }
 
+// setProxy sets the proxy settings for the specified network interface.
 func setProxy(proxyTypes []string, network, domain string, port uint16) error {
 	args := []string{"", network, domain, strconv.FormatUint(uint64(port), 10)}
 
@@ -74,6 +79,7 @@ func setProxy(proxyTypes []string, network, domain string, port uint16) error {
 	return nil
 }
 
+// unsetProxy unsets the proxy settings for the specified network interface.
 func unsetProxy(proxyTypes []string, network string) error {
 	args := []string{"", network, "off"}
 
@@ -86,6 +92,7 @@ func unsetProxy(proxyTypes []string, network string) error {
 	return nil
 }
 
+// networkSetup executes the networksetup command with the provided arguments.
 func networkSetup(args []string) error {
 	cmd := exec.Command("networksetup", args...)
 	out, err := cmd.CombinedOutput()
@@ -99,6 +106,7 @@ func networkSetup(args []string) error {
 	return nil
 }
 
+// isMacOSPermissionError checks if the error is a macOS permission error.
 func isMacOSPermissionError(err error) bool {
 	if runtime.GOOS != darwinOS {
 		return false

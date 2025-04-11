@@ -54,6 +54,7 @@ type HttpRequest struct {
 	version string
 }
 
+// ReadHttpRequest reads an HTTP request from the provided io.Reader.
 func ReadHttpRequest(rdr io.Reader) (*HttpRequest, error) {
 	p, err := parse(rdr)
 	if err != nil {
@@ -82,6 +83,7 @@ func (p *HttpRequest) Version() string {
 	return p.version
 }
 
+// IsValidMethod checks if the HTTP method is valid.
 func (p *HttpRequest) IsValidMethod() bool {
 	if _, exists := validMethod[p.Method()]; exists {
 		return true
@@ -90,10 +92,12 @@ func (p *HttpRequest) IsValidMethod() bool {
 	return false
 }
 
+// IsConnectMethod checks if the HTTP method is CONNECT.
 func (p *HttpRequest) IsConnectMethod() bool {
 	return p.Method() == "CONNECT"
 }
 
+// IsValid checks if the HTTP request is valid.
 func (p *HttpRequest) Tidy() {
 	s := string(p.raw)
 
@@ -119,6 +123,7 @@ func (p *HttpRequest) Tidy() {
 	p.raw = buf.Bytes()
 }
 
+// parse reads an HTTP request from the provided io.Reader and returns an HttpRequest struct.
 func parse(rdr io.Reader) (*HttpRequest, error) {
 	sb := strings.Builder{}
 	tee := io.TeeReader(rdr, &sb)

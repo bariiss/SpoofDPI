@@ -12,6 +12,7 @@ import (
 
 // Minimal RFC 6724 address selection.
 
+// SortByRFC6724 sorts addrs by RFC 6724 rules.
 func SortByRFC6724(addrs []net.IPAddr) {
 	if len(addrs) < 2 {
 		return
@@ -19,6 +20,7 @@ func SortByRFC6724(addrs []net.IPAddr) {
 	sortByRFC6724withSrcs(addrs, srcAddrs(addrs))
 }
 
+// sortByRFC6724withSrcs sorts addrs by RFC 6724 rules.
 func sortByRFC6724withSrcs(addrs []net.IPAddr, srcs []netip.Addr) {
 	if len(addrs) != len(srcs) {
 		panic("internal error")
@@ -67,6 +69,7 @@ type ipAttr struct {
 	Label      uint8
 }
 
+// ipAttrOf returns the RFC 6724 attributes of ip.
 func ipAttrOf(ip netip.Addr) ipAttr {
 	if !ip.IsValid() {
 		return ipAttr{}
@@ -86,8 +89,10 @@ type byRFC6724 struct {
 	srcAttr  []ipAttr
 }
 
+// Len returns the number of addresses in the list.
 func (s *byRFC6724) Len() int { return len(s.addrs) }
 
+// Swap swaps the addresses at indices i and j.
 func (s *byRFC6724) Swap(i, j int) {
 	s.addrs[i], s.addrs[j] = s.addrs[j], s.addrs[i]
 	s.srcs[i], s.srcs[j] = s.srcs[j], s.srcs[i]
@@ -314,6 +319,7 @@ const (
 	scopeGlobal    scope = 0xe
 )
 
+// classifyScope returns the scope of the address.
 func classifyScope(ip netip.Addr) scope {
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() {
 		return scopeLinkLocal

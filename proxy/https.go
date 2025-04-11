@@ -12,6 +12,7 @@ import (
 
 const protoHTTPS = "HTTPS"
 
+// handleHttps handles HTTPS requests by establishing a connection to the requested server.
 func (pxy *Proxy) handleHttps(ctx context.Context, lConn *net.TCPConn, exploit bool, initPkt *packet.HttpRequest, ip string) {
 	ctx = util.GetCtxWithScope(ctx, protoHTTPS)
 	logger := log.GetCtxLogger(ctx)
@@ -77,6 +78,7 @@ func (pxy *Proxy) handleHttps(ctx context.Context, lConn *net.TCPConn, exploit b
 	go Serve(ctx, lConn, rConn, protoHTTPS, lConn.RemoteAddr().String(), initPkt.Domain(), pxy.timeout)
 }
 
+// splitInChunks splits the given byte slice into chunks of the specified size.
 func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
 	logger := log.GetCtxLogger(ctx)
 
@@ -115,6 +117,7 @@ func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
 	return [][]byte{raw[:1], raw[1:]}
 }
 
+// writeChunks writes the given byte slices to the connection.
 func writeChunks(conn *net.TCPConn, c [][]byte) (n int, err error) {
 	total := 0
 	for i := 0; i < len(c); i++ {

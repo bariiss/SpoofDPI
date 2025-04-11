@@ -13,6 +13,7 @@ import (
 	"github.com/bariiss/SpoofDPI/version"
 )
 
+// main is the entry point of the application.
 func main() {
 	args := util.ParseArgs()
 	if args.Version {

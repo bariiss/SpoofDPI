@@ -5,11 +5,13 @@ import (
 	"net"
 )
 
+// ReadBytes reads bytes from the connection into the destination slice.
 func ReadBytes(conn *net.TCPConn, dest []byte) ([]byte, error) {
 	n, err := readBytesInternal(conn, dest)
 	return dest[:n], err
 }
 
+// readBytesInternal reads bytes from the connection into the destination slice.
 func readBytesInternal(conn *net.TCPConn, dest []byte) (int, error) {
 	totalRead, err := conn.Read(dest)
 	if err != nil {

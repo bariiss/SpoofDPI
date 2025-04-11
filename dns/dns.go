@@ -29,6 +29,7 @@ type Dns struct {
 	qTypes        []uint16
 }
 
+// NewDns creates a new Dns instance with the given configuration.
 func NewDns(config *util.Config) *Dns {
 	addr := config.DnsAddr
 	port := strconv.Itoa(config.DnsPort)
@@ -48,6 +49,7 @@ func NewDns(config *util.Config) *Dns {
 	}
 }
 
+// ResolveHost resolves the given host using the appropriate resolver based on the configuration.
 func (d *Dns) ResolveHost(ctx context.Context, host string, enableDoh bool, useSystemDns bool) (string, error) {
 	ctx = util.GetCtxWithScope(ctx, scopeDNS)
 	logger := log.GetCtxLogger(ctx)
@@ -79,6 +81,7 @@ func (d *Dns) ResolveHost(ctx context.Context, host string, enableDoh bool, useS
 	return "", fmt.Errorf("could not resolve %s using %s", host, clt)
 }
 
+// clientFactory returns the appropriate resolver based on the configuration.
 func (d *Dns) clientFactory(enableDoh bool, useSystemDns bool) Resolver {
 	if useSystemDns {
 		return d.systemClient
@@ -91,6 +94,7 @@ func (d *Dns) clientFactory(enableDoh bool, useSystemDns bool) Resolver {
 	return d.generalClient
 }
 
+// parseIpAddr parses the given address string into a net.IPAddr.
 func parseIpAddr(addr string) (*net.IPAddr, error) {
 	ip := net.ParseIP(addr)
 	if ip == nil {

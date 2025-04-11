@@ -27,6 +27,7 @@ type TLSHeader struct {
 	PayloadLen   uint16
 }
 
+// ReadTLSMessage reads a TLS message from the provided io.Reader.
 func ReadTLSMessage(r io.Reader) (*TLSMessage, error) {
 	var rawHeader [TLSHeaderLen]byte
 	_, err := io.ReadFull(r, rawHeader[:])
@@ -59,6 +60,7 @@ func ReadTLSMessage(r io.Reader) (*TLSMessage, error) {
 	return hello, nil
 }
 
+// IsClientHello checks if the TLS message is a Client Hello message.
 func (m *TLSMessage) IsClientHello() bool {
 	// According to RFC 8446 section 4.
 	// first byte (Raw[5]) of handshake message should be 0x1 - means client_hello

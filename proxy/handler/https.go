@@ -21,6 +21,7 @@ type HttpsHandler struct {
 	allowedPatterns []*regexp.Regexp
 }
 
+// NewHttpsHandler creates a new HttpsHandler instance with the given timeout, window size, allowed patterns, and exploit flag.
 func NewHttpsHandler(timeout int, windowSize int, allowedPatterns []*regexp.Regexp, exploit bool) *HttpsHandler {
 	return &HttpsHandler{
 		bufferSize:      1024,
@@ -33,6 +34,7 @@ func NewHttpsHandler(timeout int, windowSize int, allowedPatterns []*regexp.Rege
 	}
 }
 
+// Serve handles the HTTPS request by establishing a connection to the requested server.
 func (h *HttpsHandler) Serve(ctx context.Context, lConn *net.TCPConn, initPkt *packet.HttpRequest, ip string) {
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
@@ -96,6 +98,7 @@ func (h *HttpsHandler) Serve(ctx context.Context, lConn *net.TCPConn, initPkt *p
 	}
 }
 
+// communicate handles the communication between the client and server.
 func (h *HttpsHandler) communicate(ctx context.Context, from *net.TCPConn, to *net.TCPConn, fd string, td string) {
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
@@ -133,6 +136,7 @@ func (h *HttpsHandler) communicate(ctx context.Context, from *net.TCPConn, to *n
 	}
 }
 
+// splitInChunks splits the given byte slice into chunks of the specified size.
 func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
 	logger := log.GetCtxLogger(ctx)
 
@@ -171,6 +175,7 @@ func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
 	return [][]byte{raw[:1], raw[1:]}
 }
 
+// writeChunks writes the given byte slices to the connection.
 func writeChunks(conn *net.TCPConn, c [][]byte) (n int, err error) {
 	total := 0
 	for i := 0; i < len(c); i++ {

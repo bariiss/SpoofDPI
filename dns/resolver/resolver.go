@@ -19,6 +19,7 @@ type DNSResult struct {
 	err error
 }
 
+// recordTypeIDToName maps DNS record type IDs to their string representations.
 func recordTypeIDToName(id uint16) string {
 	switch id {
 	case 1:
@@ -29,6 +30,7 @@ func recordTypeIDToName(id uint16) string {
 	return strconv.FormatUint(uint64(id), 10)
 }
 
+// parseAddrsFromMsg extracts IP addresses from the DNS message.
 func parseAddrsFromMsg(msg *dns.Msg) []net.IPAddr {
 	var addrs []net.IPAddr
 
@@ -43,10 +45,12 @@ func parseAddrsFromMsg(msg *dns.Msg) []net.IPAddr {
 	return addrs
 }
 
+// parseIpAddr parses a string into an IP address.
 func sortAddrs(addrs []net.IPAddr) {
 	addrselect.SortByRFC6724(addrs)
 }
 
+// lookupAllTypes performs DNS lookups for all specified types concurrently.
 func lookupAllTypes(ctx context.Context, host string, qTypes []uint16, exchange exchangeFunc) <-chan *DNSResult {
 	var wg sync.WaitGroup
 	resCh := make(chan *DNSResult)
@@ -71,6 +75,7 @@ func lookupAllTypes(ctx context.Context, host string, qTypes []uint16, exchange 
 	return resCh
 }
 
+// lookupType performs a DNS lookup for a specific type and returns the result.
 func lookupType(ctx context.Context, host string, queryType uint16, exchange exchangeFunc) *DNSResult {
 	msg := newMsg(host, queryType)
 	resp, err := exchange(ctx, msg)
@@ -82,12 +87,14 @@ func lookupType(ctx context.Context, host string, queryType uint16, exchange exc
 	return &DNSResult{msg: resp}
 }
 
+// newMsg creates a new DNS message with the specified host and query type.
 func newMsg(host string, qType uint16) *dns.Msg {
 	msg := new(dns.Msg)
 	msg.SetQuestion(dns.Fqdn(host), qType)
 	return msg
 }
 
+// processResults processes the results from the DNS lookups and returns the IP addresses.
 func processResults(ctx context.Context, resCh <-chan *DNSResult) ([]net.IPAddr, error) {
 	var errs []error
 	var addrs []net.IPAddr

@@ -8,10 +8,12 @@ import (
 
 type scopeCtxKey struct{}
 
+// GetCtxWithScope creates a new context with the given scope.
 func GetCtxWithScope(ctx context.Context, scope string) context.Context {
 	return context.WithValue(ctx, scopeCtxKey{}, scope)
 }
 
+// GetScopeFromCtx retrieves the scope from the context.
 func GetScopeFromCtx(ctx context.Context) (string, bool) {
 	if scope, ok := ctx.Value(scopeCtxKey{}).(string); ok {
 		return scope, true
@@ -21,10 +23,12 @@ func GetScopeFromCtx(ctx context.Context) (string, bool) {
 
 type traceIdCtxKey struct{}
 
+// GetCtxWithTraceId creates a new context with a generated trace ID.
 func GetCtxWithTraceId(ctx context.Context) context.Context {
 	return context.WithValue(ctx, traceIdCtxKey{}, generateTraceId())
 }
 
+// GetTraceIdFromCtx retrieves the trace ID from the context.
 func GetTraceIdFromCtx(ctx context.Context) (string, bool) {
 	if traceId, ok := ctx.Value(traceIdCtxKey{}).(string); ok {
 		return traceId, true
@@ -32,6 +36,7 @@ func GetTraceIdFromCtx(ctx context.Context) (string, bool) {
 	return "", false
 }
 
+// generateTraceId generates a random trace ID in the format "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".
 func generateTraceId() string {
 	sb := strings.Builder{}
 	sb.Grow(35)

@@ -15,11 +15,13 @@ const (
 	BufferSize = 1024
 )
 
+// ReadBytes reads bytes from the TCP connection and returns them.
 func ReadBytes(conn *net.TCPConn, dest []byte) ([]byte, error) {
 	n, err := readBytesInternal(conn, dest)
 	return dest[:n], err
 }
 
+// readBytesInternal reads bytes from the TCP connection into the destination slice.
 func readBytesInternal(conn *net.TCPConn, dest []byte) (int, error) {
 	totalRead, err := conn.Read(dest)
 	if err != nil {
