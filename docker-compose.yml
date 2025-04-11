@@ -8,16 +8,16 @@ services:
       - "${DOCKER_ADDR}:${DOCKER_PORT}:${APP_PORT}"
     networks:
       spoofdpi:
-    command: >
-      -window-size=${WINDOW_SIZE}
-      -port=${APP_PORT}
-      -addr=${APP_ADDR}
-      -enable-doh=${DOH_ENABLED}
-      -dns-addr=${DNS_ADDR}
-      -dns-port=${DNS_PORT}
-      -system-proxy=${SYSTEM_PROXY}
-      -debug=${DEBUG_MODE}
-      -dns-ipv4-only
+    command:
+      - "-window-size=${WINDOW_SIZE}"
+      - "-port=${APP_PORT}"
+      - "-addr=${APP_ADDR}"
+      - "-enable-doh=${DOH_ENABLED}"
+      - "-dns-addr=${DNS_ADDR}"
+      - "-dns-port=${DNS_PORT}"
+      - "-system-proxy=${SYSTEM_PROXY}"
+      - "-debug=${DEBUG_MODE}"
+      - "-dns-ipv4-only"
 
 networks:
   spoofdpi:
