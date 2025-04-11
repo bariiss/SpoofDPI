@@ -86,18 +86,22 @@ jobs:
       - name: Display Go version
         run: go version
 
-      - name: Build binary
+      - name: Build binary and checksums
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
           OUTPUT_NAME="spoofdpi-${GOOS}-${GOARCH}"
           if [ "$GOOS" = "windows" ]; then
-            go build -ldflags="-w -s" -o "${OUTPUT_NAME}.exe" ./cmd/spoofdpi
-            gh release upload "$TAG_NAME" "${OUTPUT_NAME}.exe"
+            BINARY_NAME="${OUTPUT_NAME}.exe"
+            go build -ldflags="-w -s" -o "${BINARY_NAME}" ./cmd/spoofdpi
+            sha256sum "${BINARY_NAME}" > "${BINARY_NAME}.sha256"
+            gh release upload "$TAG_NAME" "${BINARY_NAME}" "${BINARY_NAME}.sha256"
           else
+            BINARY_NAME="${OUTPUT_NAME}.tar.gz"
             go build -ldflags="-w -s" -o spoofdpi ./cmd/spoofdpi
-            tar -zcvf "${OUTPUT_NAME}.tar.gz" spoofdpi
-            gh release upload "$TAG_NAME" "${OUTPUT_NAME}.tar.gz"
+            tar -zcvf "${BINARY_NAME}" spoofdpi
+            sha256sum "${BINARY_NAME}" > "${BINARY_NAME}.sha256"
+            gh release upload "$TAG_NAME" "${BINARY_NAME}" "${BINARY_NAME}.sha256"
             rm spoofdpi
           fi
