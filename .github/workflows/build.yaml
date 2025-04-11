@@ -1,4 +1,4 @@
-name: Build Docker Image (SPOOF DPI)
+name: Build Docker Image
 
 on:
   push:
