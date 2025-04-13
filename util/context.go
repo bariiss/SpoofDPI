@@ -15,10 +15,9 @@ func GetCtxWithScope(ctx context.Context, scope string) context.Context {
 
 // GetScopeFromCtx retrieves the scope from the context.
 func GetScopeFromCtx(ctx context.Context) (string, bool) {
-	if scope, ok := ctx.Value(scopeCtxKey{}).(string); ok {
-		return scope, true
-	}
-	return "", false
+	val := ctx.Value(scopeCtxKey{})
+	scope, ok := val.(string)
+	return scope, ok
 }
 
 type traceIdCtxKey struct{}
@@ -30,31 +29,33 @@ func GetCtxWithTraceId(ctx context.Context) context.Context {
 
 // GetTraceIdFromCtx retrieves the trace ID from the context.
 func GetTraceIdFromCtx(ctx context.Context) (string, bool) {
-	if traceId, ok := ctx.Value(traceIdCtxKey{}).(string); ok {
-		return traceId, true
-	}
-	return "", false
+	val := ctx.Value(traceIdCtxKey{})
+	traceId, ok := val.(string)
+	return traceId, ok
 }
 
 // generateTraceId generates a random trace ID in the format "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".
 func generateTraceId() string {
 	sb := strings.Builder{}
-	sb.Grow(35)
+	sb.Grow(36)
 
-	var q uint64
-	var r uint8
-	for i := 0; i < 32; i++ {
-		if i%15 == 0 {
-			q = rand.Uint64()
-		}
-		q, r = q>>4, uint8(q&0xF)
-		if r > 9 {
-			r += 0x27
-		}
-		sb.WriteByte(r + 0x30)
-		if i&7 == 7 && i != 31 {
-			sb.WriteByte(0x2D)
+	for i := 0; i < 36; i++ {
+		switch i {
+		case 8, 13, 18, 23:
+			sb.WriteByte('-')
+			continue
+		case 14:
+			sb.WriteByte('4') // version 4
+			continue
+		case 19:
+			r := rand.Intn(4) + 8 // values 8–b
+			sb.WriteByte("89ab"[r-8])
+			continue
+		default:
+			n := rand.Intn(16)
+			sb.WriteByte("0123456789abcdef"[n])
 		}
 	}
+
 	return sb.String()
 }

@@ -50,7 +50,7 @@ func NewDns(config *util.Config) *Dns {
 }
 
 // ResolveHost resolves the given host using the appropriate resolver based on the configuration.
-func (d *Dns) ResolveHost(ctx context.Context, host string, enableDoh bool, useSystemDns bool) (string, error) {
+func (d *Dns) ResolveHost(ctx context.Context, host string, enableDoh, useSystemDns bool) (string, error) {
 	ctx = util.GetCtxWithScope(ctx, scopeDNS)
 	logger := log.GetCtxLogger(ctx)
 
@@ -64,33 +64,30 @@ func (d *Dns) ResolveHost(ctx context.Context, host string, enableDoh bool, useS
 
 	logger.Debug().Msgf("resolving %s using %s", host, clt)
 
-	t := time.Now()
-
+	start := time.Now()
 	addrs, err := clt.Resolve(ctx, host, d.qTypes)
-	// addrs, err := clt.Resolve(ctx, host, []uint16{dns.TypeAAAA})
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", clt, err)
 	}
 
-	if len(addrs) > 0 {
-		d := time.Since(t).Milliseconds()
-		logger.Debug().Msgf("resolved %s from %s in %d ms", addrs[0].String(), host, d)
-		return addrs[0].String(), nil
+	if len(addrs) == 0 {
+		return "", fmt.Errorf("could not resolve %s using %s", host, clt)
 	}
 
-	return "", fmt.Errorf("could not resolve %s using %s", host, clt)
+	duration := time.Since(start).Milliseconds()
+	logger.Debug().Msgf("resolved %s from %s in %d ms", addrs[0].String(), host, duration)
+
+	return addrs[0].String(), nil
 }
 
 // clientFactory returns the appropriate resolver based on the configuration.
-func (d *Dns) clientFactory(enableDoh bool, useSystemDns bool) Resolver {
+func (d *Dns) clientFactory(enableDoh, useSystemDns bool) Resolver {
 	if useSystemDns {
 		return d.systemClient
 	}
-
 	if enableDoh {
 		return d.dohClient
 	}
-
 	return d.generalClient
 }
 
@@ -100,10 +97,5 @@ func parseIpAddr(addr string) (*net.IPAddr, error) {
 	if ip == nil {
 		return nil, fmt.Errorf("%s is not an ip address", addr)
 	}
-
-	ipAddr := &net.IPAddr{
-		IP: ip,
-	}
-
-	return ipAddr, nil
+	return &net.IPAddr{IP: ip}, nil
 }

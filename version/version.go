@@ -1,13 +1,16 @@
 package version
 
-import _ "embed"
+import (
+	_ "embed"
+	"fmt"
+)
 
 //go:embed VERSION
 var VERSION string
 
 // PrintVersion prints the version of the application.
 func PrintVersion() {
-	println("spoofdpi", "v"+VERSION)
-	println("A simple and fast anti-censorship tool written in Go.")
-	println("https://github.com/bariiss/SpoofDPI")
+	fmt.Printf("spoofdpi v%s\n", VERSION)
+	fmt.Println("A simple and fast anti-censorship tool written in Go.")
+	fmt.Println("https://github.com/bariiss/SpoofDPI")
 }

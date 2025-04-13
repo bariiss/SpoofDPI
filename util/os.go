@@ -13,6 +13,7 @@ const (
 	getDefaultNetworkCMD = "networksetup -listnetworkserviceorder | grep" +
 		" `(route -n get default | grep 'interface' || route -n get -inet6 default | grep 'interface') | cut -d ':' -f2`" +
 		" -B 1 | head -n 1 | cut -d ' ' -f 2-"
+
 	darwinOS                     = "darwin"
 	permissionErrorHelpTextMacOS = "By default SpoofDPI tries to set itself up as a system-wide proxy server.\n" +
 		"Doing so may require root access on machines with\n" +
@@ -52,13 +53,14 @@ func UnsetOsProxy() error {
 
 // getDefaultNetwork retrieves the default network interface on macOS.
 func getDefaultNetwork() (string, error) {
-	network, err := exec.Command("sh", "-c", getDefaultNetworkCMD).Output()
+	output, err := exec.Command("sh", "-c", getDefaultNetworkCMD).Output()
 	if err != nil {
 		return "", err
-	} else if len(network) == 0 {
+	}
+	if len(output) == 0 {
 		return "", errors.New("no available networks")
 	}
-	return strings.TrimSpace(string(network)), nil
+	return strings.TrimSpace(string(output)), nil
 }
 
 // getProxyTypes returns the types of proxies that can be set on macOS.
@@ -72,20 +74,22 @@ func setProxy(proxyTypes []string, network, domain string, port uint16) error {
 
 	for _, proxyType := range proxyTypes {
 		args[0] = "-set" + proxyType
-		if err := networkSetup(args); err != nil {
+		err := networkSetup(args)
+		if err != nil {
 			return fmt.Errorf("setting %s: %w", proxyType, err)
 		}
 	}
 	return nil
 }
 
-// unsetProxy unsets the proxy settings for the specified network interface.
+// unsetProxy disables the proxy settings for the specified network interface.
 func unsetProxy(proxyTypes []string, network string) error {
 	args := []string{"", network, "off"}
 
 	for _, proxyType := range proxyTypes {
 		args[0] = "-set" + proxyType + "state"
-		if err := networkSetup(args); err != nil {
+		err := networkSetup(args)
+		if err != nil {
 			return fmt.Errorf("unsetting %s: %w", proxyType, err)
 		}
 	}
@@ -96,23 +100,23 @@ func unsetProxy(proxyTypes []string, network string) error {
 func networkSetup(args []string) error {
 	cmd := exec.Command("networksetup", args...)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		msg := string(out)
-		if isMacOSPermissionError(err) {
-			msg += permissionErrorHelpTextMacOS
-		}
-		return fmt.Errorf("%s: %s", cmd.String(), msg)
+	if err == nil {
+		return nil
 	}
-	return nil
+
+	msg := string(out)
+	if isMacOSPermissionError(err) {
+		msg += permissionErrorHelpTextMacOS
+	}
+	return fmt.Errorf("%s: %s", cmd.String(), msg)
 }
 
-// isMacOSPermissionError checks if the error is a macOS permission error.
+// isMacOSPermissionError checks if the error is a macOS-specific permission error.
 func isMacOSPermissionError(err error) bool {
 	if runtime.GOOS != darwinOS {
 		return false
 	}
 
 	var exitErr *exec.ExitError
-	ok := errors.As(err, &exitErr)
-	return ok && exitErr.ExitCode() == 14
+	return errors.As(err, &exitErr) && exitErr.ExitCode() == 14
 }

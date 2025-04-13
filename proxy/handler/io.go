@@ -2,26 +2,20 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net"
 )
 
-// ReadBytes reads bytes from the connection into the destination slice.
+// ReadBytes reads bytes from the TCP connection into the provided destination buffer.
+// It returns a slice of the data read and any error encountered.
 func ReadBytes(conn *net.TCPConn, dest []byte) ([]byte, error) {
-	n, err := readBytesInternal(conn, dest)
-	return dest[:n], err
-}
-
-// readBytesInternal reads bytes from the connection into the destination slice.
-func readBytesInternal(conn *net.TCPConn, dest []byte) (int, error) {
-	totalRead, err := conn.Read(dest)
+	n, err := conn.Read(dest)
 	if err != nil {
 		var opError *net.OpError
-		switch {
-		case errors.As(err, &opError) && opError.Timeout():
-			return totalRead, errors.New("timed out")
-		default:
-			return totalRead, err
+		if errors.As(err, &opError) && opError.Timeout() {
+			return dest[:n], fmt.Errorf("read timeout: %w", err)
 		}
+		return dest[:n], err
 	}
-	return totalRead, nil
+	return dest[:n], nil
 }

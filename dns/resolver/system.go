@@ -9,10 +9,10 @@ type SystemResolver struct {
 	*net.Resolver
 }
 
-// NewSystemResolver creates a new SystemResolver instance.
+// NewSystemResolver creates a new SystemResolver instance using Go's built-in resolver.
 func NewSystemResolver() *SystemResolver {
 	return &SystemResolver{
-		&net.Resolver{PreferGo: true},
+		Resolver: &net.Resolver{PreferGo: true},
 	}
 }
 
@@ -25,7 +25,7 @@ func (r *SystemResolver) String() string {
 func (r *SystemResolver) Resolve(ctx context.Context, host string, _ []uint16) ([]net.IPAddr, error) {
 	addrs, err := r.LookupIPAddr(ctx, host)
 	if err != nil {
-		return []net.IPAddr{}, err
+		return nil, err
 	}
 	return addrs, nil
 }

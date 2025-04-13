@@ -33,43 +33,60 @@ func InitLogger(cfg *util.Config) {
 	}
 
 	consoleWriter := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.RFC3339,
-		PartsOrder: partsOrder,
+		Out:           os.Stdout,
+		TimeFormat:    time.RFC3339,
+		PartsOrder:    partsOrder,
+		FieldsExclude: []string{traceIdFieldName, scopeFieldName},
 		FormatPrepare: func(m map[string]any) error {
-			formatFieldValue[string](m, "%s", traceIdFieldName)
-			formatFieldValue[string](m, "[%s]", scopeFieldName)
+			formatFieldValue(m, "%s", traceIdFieldName)
+			formatFieldValue(m, "[%s]", scopeFieldName)
 			return nil
 		},
-		FieldsExclude: []string{traceIdFieldName, scopeFieldName},
 	}
 
-	logger = zerolog.New(consoleWriter).Hook(ctxHook{})
+	level := zerolog.InfoLevel
 	if cfg.Debug {
-		logger = logger.Level(zerolog.DebugLevel)
-	} else {
-		logger = logger.Level(zerolog.InfoLevel)
+		level = zerolog.DebugLevel
 	}
-	logger = logger.With().Timestamp().Logger()
+
+	logger = zerolog.New(consoleWriter).
+		Level(level).
+		Hook(ctxHook{}).
+		With().
+		Timestamp().
+		Logger()
 }
 
 // formatFieldValue formats the field value in the map according to the given format.
-func formatFieldValue[T any](vs map[string]any, format string, field string) {
-	if v, ok := vs[field].(T); ok {
+func formatFieldValue(vs map[string]any, format string, field string) {
+	value, ok := vs[field]
+	if !ok {
+		vs[field] = ""
+		return
+	}
+
+	switch v := value.(type) {
+	case string:
 		vs[field] = fmt.Sprintf(format, v)
-	} else {
+	default:
 		vs[field] = ""
 	}
 }
 
 type ctxHook struct{}
 
-// Run is a hook that adds the trace ID and scope to the log event.
+// Run adds the trace ID and scope to the log event from the context.
 func (h ctxHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
-	if scope, ok := util.GetScopeFromCtx(e.GetCtx()); ok {
+	ctx := e.GetCtx()
+	if ctx == nil {
+		return
+	}
+
+	if scope, ok := util.GetScopeFromCtx(ctx); ok {
 		e.Str(scopeFieldName, scope)
 	}
-	if traceId, ok := util.GetTraceIdFromCtx(e.GetCtx()); ok {
+
+	if traceId, ok := util.GetTraceIdFromCtx(ctx); ok {
 		e.Str(traceIdFieldName, traceId)
 	}
 }

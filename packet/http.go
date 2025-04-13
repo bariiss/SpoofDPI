@@ -3,6 +3,7 @@ package packet
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -101,24 +102,30 @@ func (p *HttpRequest) IsConnectMethod() bool {
 func (p *HttpRequest) Tidy() {
 	s := string(p.raw)
 
-	parts := strings.Split(s, "\r\n\r\n")
-	meta := strings.Split(parts[0], "\r\n")
+	parts := strings.SplitN(s, "\r\n\r\n", 2)
+	if len(parts) < 2 {
+		// Invalid HTTP request, nothing to tidy
+		return
+	}
 
-	meta[0] = p.method + " " + p.path + " " + p.version
+	headers := strings.Split(parts[0], "\r\n")
+
+	// Reconstruct request line
+	headers[0] = fmt.Sprintf("%s %s %s", p.method, p.path, p.version)
 
 	var buf bytes.Buffer
 	buf.Grow(len(p.raw))
 
-	crLF := []byte{0xD, 0xA}
-	for _, m := range meta {
-		if strings.HasPrefix(m, "Proxy-Connection") {
-			continue
+	crlf := []byte("\r\n")
+	for _, line := range headers {
+		if strings.HasPrefix(line, "Proxy-Connection:") {
+			continue // skip this header
 		}
-		buf.WriteString(m)
-		buf.Write(crLF)
+		buf.WriteString(line)
+		buf.Write(crlf)
 	}
-	buf.Write(crLF)
-	buf.WriteString(parts[1])
+	buf.Write(crlf)
+	buf.WriteString(parts[1]) // body
 
 	p.raw = buf.Bytes()
 }

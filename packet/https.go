@@ -30,8 +30,8 @@ type TLSHeader struct {
 // ReadTLSMessage reads a TLS message from the provided io.Reader.
 func ReadTLSMessage(r io.Reader) (*TLSMessage, error) {
 	var rawHeader [TLSHeaderLen]byte
-	_, err := io.ReadFull(r, rawHeader[:])
-	if err != nil {
+
+	if _, err := io.ReadFull(r, rawHeader[:]); err != nil {
 		return nil, err
 	}
 
@@ -40,8 +40,8 @@ func ReadTLSMessage(r io.Reader) (*TLSMessage, error) {
 		ProtoVersion: binary.BigEndian.Uint16(rawHeader[1:3]),
 		PayloadLen:   binary.BigEndian.Uint16(rawHeader[3:5]),
 	}
+
 	if header.PayloadLen > TLSMaxPayloadLen {
-		// Corrupted header? Check integer overflow
 		return nil, fmt.Errorf(
 			"invalid TLS header. Type: %x, ProtoVersion: %x, PayloadLen: %x",
 			header.Type,
@@ -49,27 +49,31 @@ func ReadTLSMessage(r io.Reader) (*TLSMessage, error) {
 			header.PayloadLen,
 		)
 	}
-	raw := make([]byte, header.PayloadLen+TLSHeaderLen)
-	copy(raw[0:TLSHeaderLen], rawHeader[:])
-	_, err = io.ReadFull(r, raw[TLSHeaderLen:])
-	if err != nil {
+
+	raw := make([]byte, TLSHeaderLen+int(header.PayloadLen))
+	copy(raw[:TLSHeaderLen], rawHeader[:])
+
+	if _, err := io.ReadFull(r, raw[TLSHeaderLen:]); err != nil {
 		return nil, err
 	}
 
-	hello := &TLSMessage{
+	return &TLSMessage{
 		Header:     header,
 		Raw:        raw,
 		RawHeader:  raw[:TLSHeaderLen],
 		RawPayload: raw[TLSHeaderLen:],
-	}
-	return hello, nil
+	}, nil
 }
 
 // IsClientHello checks if the TLS message is a Client Hello message.
+// According to RFC 8446 Section 4:
+// TLS handshake message type 0x01 means "client_hello".
 func (m *TLSMessage) IsClientHello() bool {
-	// According to RFC 8446 section 4.
-	// first byte (Raw[5]) of handshake message should be 0x1 - means client_hello
-	return len(m.Raw) > TLSHeaderLen &&
-		m.Header.Type == TLSHandshake &&
-		m.Raw[5] == 0x01
+	if len(m.Raw) <= TLSHeaderLen {
+		return false
+	}
+	if m.Header.Type != TLSHandshake {
+		return false
+	}
+	return m.Raw[5] == 0x01
 }

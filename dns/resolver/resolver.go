@@ -22,30 +22,29 @@ type DNSResult struct {
 // recordTypeIDToName maps DNS record type IDs to their string representations.
 func recordTypeIDToName(id uint16) string {
 	switch id {
-	case 1:
+	case dns.TypeA:
 		return "A"
-	case 28:
+	case dns.TypeAAAA:
 		return "AAAA"
+	default:
+		return strconv.FormatUint(uint64(id), 10)
 	}
-	return strconv.FormatUint(uint64(id), 10)
 }
 
-// parseAddrsFromMsg extracts IP addresses from the DNS message.
+// parseAddrsFromMsg extracts IP addresses from a DNS response.
 func parseAddrsFromMsg(msg *dns.Msg) []net.IPAddr {
-	var addrs []net.IPAddr
-
-	for _, record := range msg.Answer {
-		switch ipRecord := record.(type) {
+	addrs := make([]net.IPAddr, 0, len(msg.Answer))
+	for _, ans := range msg.Answer {
+		switch rr := ans.(type) {
 		case *dns.A:
-			addrs = append(addrs, net.IPAddr{IP: ipRecord.A})
+			addrs = append(addrs, net.IPAddr{IP: rr.A})
 		case *dns.AAAA:
-			addrs = append(addrs, net.IPAddr{IP: ipRecord.AAAA})
+			addrs = append(addrs, net.IPAddr{IP: rr.AAAA})
 		}
 	}
 	return addrs
 }
 
-// parseIpAddr parses a string into an IP address.
 func sortAddrs(addrs []net.IPAddr) {
 	addrselect.SortByRFC6724(addrs)
 }
@@ -61,7 +60,6 @@ func lookupAllTypes(ctx context.Context, host string, qTypes []uint16, exchange 
 			defer wg.Done()
 			select {
 			case <-ctx.Done():
-				return
 			case resCh <- lookupType(ctx, host, qType, exchange):
 			}
 		}(qType)
@@ -76,44 +74,44 @@ func lookupAllTypes(ctx context.Context, host string, qTypes []uint16, exchange 
 }
 
 // lookupType performs a DNS lookup for a specific type and returns the result.
-func lookupType(ctx context.Context, host string, queryType uint16, exchange exchangeFunc) *DNSResult {
-	msg := newMsg(host, queryType)
+func lookupType(ctx context.Context, host string, qType uint16, exchange exchangeFunc) *DNSResult {
+	msg := newMsg(host, qType)
 	resp, err := exchange(ctx, msg)
 	if err != nil {
-		queryName := recordTypeIDToName(queryType)
-		err = fmt.Errorf("resolving %s, query type %s: %w", host, queryName, err)
+		err = fmt.Errorf("resolving %s (%s): %w", host, recordTypeIDToName(qType), err)
 		return &DNSResult{err: err}
 	}
 	return &DNSResult{msg: resp}
 }
 
-// newMsg creates a new DNS message with the specified host and query type.
+// newMsg creates a DNS message with a question for the specified host and type.
 func newMsg(host string, qType uint16) *dns.Msg {
 	msg := new(dns.Msg)
 	msg.SetQuestion(dns.Fqdn(host), qType)
 	return msg
 }
 
-// processResults processes the results from the DNS lookups and returns the IP addresses.
+// processResults aggregates and sorts successful DNS responses.
 func processResults(ctx context.Context, resCh <-chan *DNSResult) ([]net.IPAddr, error) {
-	var errs []error
-	var addrs []net.IPAddr
+	var (
+		addrs []net.IPAddr
+		errs  []error
+	)
 
-	for result := range resCh {
-		if result.err != nil {
-			errs = append(errs, result.err)
+	for res := range resCh {
+		if res.err != nil {
+			errs = append(errs, res.err)
 			continue
 		}
-		resultAddrs := parseAddrsFromMsg(result.msg)
-		addrs = append(addrs, resultAddrs...)
+		addrs = append(addrs, parseAddrsFromMsg(res.msg)...)
 	}
-	select {
-	case <-ctx.Done():
-		return nil, errors.New("canceled")
-	default:
-		if len(addrs) == 0 {
-			return addrs, errors.Join(errs...)
-		}
+
+	if ctx.Err() != nil {
+		return nil, errors.New("context canceled")
+	}
+
+	if len(addrs) == 0 {
+		return nil, errors.Join(errs...)
 	}
 
 	sortAddrs(addrs)

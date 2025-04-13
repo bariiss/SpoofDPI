@@ -23,23 +23,22 @@ func (pxy *Proxy) handleHttps(
 	ctx = util.GetCtxWithScope(ctx, protoHTTPS)
 	logger := log.GetCtxLogger(ctx)
 
-	// Create a connection to the requested server
-	var port = 443
-	var err error
-	if initPkt.Port() != "" {
-		port, err = strconv.Atoi(initPkt.Port())
+	port := 443
+	pktPort := initPkt.Port()
+	if pktPort != "" {
+		parsedPort, err := strconv.Atoi(pktPort)
 		if err != nil {
-			logger.Debug().Msgf("error parsing port for %s aborting..", initPkt.Domain())
+			logger.Debug().Msgf("invalid port for %s, using default 443", initPkt.Domain())
+		}
+		if err == nil {
+			port = parsedPort
 		}
 	}
 
 	rConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
-		err := lConn.Close()
-		if err != nil {
-			return
-		}
-		logger.Debug().Msgf("%s", err)
+		_ = lConn.Close()
+		logger.Debug().Msgf("failed to connect to %s: %s", initPkt.Domain(), err)
 		return
 	}
 
@@ -47,36 +46,53 @@ func (pxy *Proxy) handleHttps(
 
 	_, err = lConn.Write([]byte(initPkt.Version() + " 200 Connection Established\r\n\r\n"))
 	if err != nil {
-		logger.Debug().Msgf("error sending 200 connection established to the client: %s", err)
+		_ = rConn.Close()
+		_ = lConn.Close()
+		logger.Debug().Msgf("failed to send 200 response to client %s: %s", lConn.RemoteAddr(), err)
 		return
 	}
 
 	logger.Debug().Msgf("sent connection established to %s", lConn.RemoteAddr())
 
-	// Read client hello
 	m, err := packet.ReadTLSMessage(lConn)
-	if err != nil || !m.IsClientHello() {
-		logger.Debug().Msgf("error reading client hello from %s: %s", lConn.RemoteAddr().String(), err)
+	if err != nil {
+		_ = rConn.Close()
+		_ = lConn.Close()
+		logger.Debug().Msgf("error reading TLS message from %s: %s", lConn.RemoteAddr(), err)
 		return
 	}
-	clientHello := m.Raw
 
+	if !m.IsClientHello() {
+		_ = rConn.Close()
+		_ = lConn.Close()
+		logger.Debug().Msgf("received non-client hello from %s", lConn.RemoteAddr())
+		return
+	}
+
+	clientHello := m.Raw
 	logger.Debug().Msgf("client sent hello %d bytes", len(clientHello))
 
-	// Generate a go routine that reads from the server
 	go Serve(ctx, rConn, lConn, protoHTTPS, initPkt.Domain(), lConn.RemoteAddr().String(), pxy.timeout)
 
 	if exploit {
 		logger.Debug().Msgf("writing chunked client hello to %s", initPkt.Domain())
 		chunks := splitInChunks(ctx, clientHello, pxy.windowSize)
-		if _, err := writeChunks(rConn, chunks); err != nil {
+		_, err := writeChunks(rConn, chunks)
+		if err != nil {
 			logger.Debug().Msgf("error writing chunked client hello to %s: %s", initPkt.Domain(), err)
+			_ = rConn.Close()
+			_ = lConn.Close()
 			return
 		}
-	} else {
+	}
+
+	if !exploit {
 		logger.Debug().Msgf("writing plain client hello to %s", initPkt.Domain())
-		if _, err := rConn.Write(clientHello); err != nil {
+		_, err := rConn.Write(clientHello)
+		if err != nil {
 			logger.Debug().Msgf("error writing plain client hello to %s: %s", initPkt.Domain(), err)
+			_ = rConn.Close()
+			_ = lConn.Close()
 			return
 		}
 	}
@@ -124,16 +140,14 @@ func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
 }
 
 // writeChunks writes the given byte slices to the connection.
-func writeChunks(conn *net.TCPConn, c [][]byte) (n int, err error) {
+func writeChunks(conn *net.TCPConn, c [][]byte) (int, error) {
 	total := 0
-	for i := 0; i < len(c); i++ {
-		b, err := conn.Write(c[i])
+	for _, chunk := range c {
+		n, err := conn.Write(chunk)
 		if err != nil {
-			return 0, nil
+			return total, err
 		}
-
-		total += b
+		total += n
 	}
-
 	return total, nil
 }

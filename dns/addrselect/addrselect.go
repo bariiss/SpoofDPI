@@ -28,7 +28,10 @@ func sortByRFC6724withSrcs(addrs []net.IPAddr, srcs []netip.Addr) {
 	addrAttr := make([]ipAttr, len(addrs))
 	srcAttr := make([]ipAttr, len(srcs))
 	for i, v := range addrs {
-		addrAttrIP, _ := netip.AddrFromSlice(v.IP)
+		addrAttrIP, ok := netip.AddrFromSlice(v.IP)
+		if !ok {
+			panic("invalid IP in addrAttrIP")
+		}
 		addrAttr[i] = ipAttrOf(addrAttrIP)
 		srcAttr[i] = ipAttrOf(srcs[i])
 	}
@@ -54,10 +57,7 @@ func srcAddrs(addrs []net.IPAddr) []netip.Addr {
 			if src, ok := c.LocalAddr().(*net.UDPAddr); ok {
 				srcs[i], _ = netip.AddrFromSlice(src.IP)
 			}
-			err := c.Close()
-			if err != nil {
-				return nil
-			}
+			_ = c.Close()
 		}
 	}
 	return srcs
@@ -347,37 +347,39 @@ func classifyScope(ip netip.Addr) scope {
 // If a and b are different IP versions, 0 is returned.
 //
 // See https://tools.ietf.org/html/rfc6724#section-2.2
-func commonPrefixLen(a netip.Addr, b net.IP) (cpl int) {
+func commonPrefixLen(a netip.Addr, b net.IP) int {
 	if b4 := b.To4(); b4 != nil {
 		b = b4
 	}
-	aAsSlice := a.AsSlice()
-	if len(aAsSlice) != len(b) {
+
+	aSlice := a.AsSlice()
+	if len(aSlice) != len(b) {
 		return 0
 	}
-	// If IPv6, only up to the prefix (first 64 bits)
-	if len(aAsSlice) > 8 {
-		aAsSlice = aAsSlice[:8]
+
+	// If IPv6, only use first 64 bits
+	if len(aSlice) > 8 {
+		aSlice = aSlice[:8]
 		b = b[:8]
 	}
-	for len(aAsSlice) > 0 {
-		if aAsSlice[0] == b[0] {
+
+	cpl := 0
+	for i := 0; i < len(aSlice); i++ {
+		if aSlice[i] == b[i] {
 			cpl += 8
-			aAsSlice = aAsSlice[1:]
-			b = b[1:]
 			continue
 		}
-		bits := 8
-		ab, bb := aAsSlice[0], b[0]
-		for {
-			ab >>= 1
-			bb >>= 1
-			bits--
-			if ab == bb {
-				cpl += bits
-				return
+
+		// Find differing bit
+		for bit := 7; bit >= 0; bit-- {
+			mask := byte(1 << bit)
+			if (aSlice[i] & mask) != (b[i] & mask) {
+				return cpl
 			}
+			cpl++
 		}
+		return cpl
 	}
-	return
+
+	return cpl
 }

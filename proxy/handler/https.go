@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"github.com/rs/zerolog"
 	"net"
 	"regexp"
 	"strconv"
@@ -49,146 +50,125 @@ func (h *HttpsHandler) Serve(
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
 
-	// Create a connection to the requested server
-	var err error
-	if initPkt.Port() != "" {
-		h.port, err = strconv.Atoi(initPkt.Port())
-		if err != nil {
-			logger.Debug().Msgf("error parsing port for %s aborting..", initPkt.Domain())
+	port := 443
+	if pktPort := initPkt.Port(); pktPort != "" {
+		if parsedPort, err := strconv.Atoi(pktPort); err == nil {
+			port = parsedPort
+		} else {
+			logger.Debug().Msgf("invalid port for %s, using default 443", initPkt.Domain())
 		}
 	}
 
-	rConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: net.ParseIP(ip), Port: h.port})
+	rConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
-		err := lConn.Close()
-		if err != nil {
-			return
-		}
-		logger.Debug().Msgf("%s", err)
+		_ = lConn.Close()
+		logger.Debug().Msgf("failed to connect to %s: %s", initPkt.Domain(), err)
 		return
 	}
 
-	logger.Debug().Msgf("new connection to the server %s -> %s", rConn.LocalAddr(), initPkt.Domain())
+	logger.Debug().Msgf("new connection to server %s -> %s", rConn.LocalAddr(), initPkt.Domain())
 
-	_, err = lConn.Write([]byte(initPkt.Version() + " 200 Connection Established\r\n\r\n"))
-	if err != nil {
-		logger.Debug().Msgf("error sending 200 connection established to the client: %s", err)
+	// Send "200 Connection Established"
+	resp := []byte(initPkt.Version() + " 200 Connection Established\r\n\r\n")
+	if _, err := lConn.Write(resp); err != nil {
+		_ = rConn.Close()
+		logger.Debug().Msgf("failed to send 200 to %s: %s", lConn.RemoteAddr(), err)
 		return
 	}
 
 	logger.Debug().Msgf("sent connection established to %s", lConn.RemoteAddr())
 
-	// Read client hello
+	// Read ClientHello
 	m, err := packet.ReadTLSMessage(lConn)
-	if err != nil || !m.IsClientHello() {
-		logger.Debug().Msgf("error reading client hello from %s: %s", lConn.RemoteAddr().String(), err)
+	if err != nil {
+		_ = rConn.Close()
+		logger.Debug().Msgf("failed to read TLS message from %s: %s", lConn.RemoteAddr(), err)
 		return
 	}
-	clientHello := m.Raw
+	if !m.IsClientHello() {
+		_ = rConn.Close()
+		logger.Debug().Msgf("non-client hello from %s", lConn.RemoteAddr())
+		return
+	}
 
+	clientHello := m.Raw
 	logger.Debug().Msgf("client sent hello %d bytes", len(clientHello))
 
-	// Generate a go routine that reads from the server
+	// Start communication pipes
 	go h.communicate(ctx, rConn, lConn, initPkt.Domain(), lConn.RemoteAddr().String())
 	go h.communicate(ctx, lConn, rConn, lConn.RemoteAddr().String(), initPkt.Domain())
 
+	// Send ClientHello (chunked or plain)
 	if h.exploit {
 		logger.Debug().Msgf("writing chunked client hello to %s", initPkt.Domain())
 		chunks := splitInChunks(ctx, clientHello, h.windowsize)
 		if _, err := writeChunks(rConn, chunks); err != nil {
-			logger.Debug().Msgf("error writing chunked client hello to %s: %s", initPkt.Domain(), err)
+			logger.Debug().Msgf("error writing chunked hello to %s: %s", initPkt.Domain(), err)
 			return
 		}
-	} else {
-		logger.Debug().Msgf("writing plain client hello to %s", initPkt.Domain())
-		if _, err := rConn.Write(clientHello); err != nil {
-			logger.Debug().Msgf("error writing plain client hello to %s: %s", initPkt.Domain(), err)
-			return
-		}
+		return
+	}
+
+	logger.Debug().Msgf("writing plain client hello to %s", initPkt.Domain())
+	if _, err := rConn.Write(clientHello); err != nil {
+		logger.Debug().Msgf("error writing plain hello to %s: %s", initPkt.Domain(), err)
+		return
 	}
 }
 
 // communicate handles the communication between the client and server.
 func (h *HttpsHandler) communicate(
 	ctx context.Context,
-	from *net.TCPConn,
-	to *net.TCPConn,
-	fd string,
-	td string,
+	from, to *net.TCPConn,
+	fd, td string,
 ) {
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
 
-	defer func() {
-		err := from.Close()
-		if err != nil {
-			return
-		}
-		err = to.Close()
-		if err != nil {
-			return
-		}
-
-		logger.Debug().Msgf("closing proxy connection: %s -> %s", fd, td)
-	}()
+	defer h.closeBoth(from, to, fd, td, logger)
 
 	buf := make([]byte, h.bufferSize)
 	for {
-		err := setConnectionTimeout(from, h.timeout)
-		if err != nil {
-			logger.Debug().Msgf("error while setting connection deadline for %s: %s", fd, err)
+		if err := setConnectionTimeout(from, h.timeout); err != nil {
+			logger.Debug().Msgf("timeout error on %s: %s", fd, err)
 		}
 
-		bytesRead, err := ReadBytes(from, buf)
+		n, err := from.Read(buf)
 		if err != nil {
-			logger.Debug().Msgf("error reading from %s: %s", fd, err)
+			logger.Debug().Msgf("read error from %s: %s", fd, err)
 			return
 		}
 
-		if _, err := to.Write(bytesRead); err != nil {
-			logger.Debug().Msgf("error writing to %s", td)
+		if _, err := to.Write(buf[:n]); err != nil {
+			logger.Debug().Msgf("write error to %s: %s", td, err)
 			return
 		}
 	}
 }
 
 // splitInChunks splits the given byte slice into chunks of the specified size.
-func splitInChunks(ctx context.Context, bytes []byte, size int) [][]byte {
+func splitInChunks(ctx context.Context, data []byte, size int) [][]byte {
 	logger := log.GetCtxLogger(ctx)
-
-	var chunks [][]byte
-	var raw = bytes
-
 	logger.Debug().Msgf("window-size: %d", size)
 
-	if size > 0 {
-		for {
-			if len(raw) == 0 {
-				break
-			}
-
-			// necessary check to avoid slicing beyond
-			// slice capacity
-			if len(raw) < size {
-				size = len(raw)
-			}
-
-			chunks = append(chunks, raw[0:size])
-			raw = raw[size:]
+	if size <= 0 {
+		logger.Debug().Msg("using legacy fragmentation")
+		if len(data) <= 1 {
+			return [][]byte{data}
 		}
-
-		return chunks
+		return [][]byte{data[:1], data[1:]}
 	}
 
-	// When the given window-size <= 0
-
-	if len(raw) < 1 {
-		return [][]byte{raw}
+	var chunks [][]byte
+	for len(data) > 0 {
+		chunkSize := size
+		if len(data) < size {
+			chunkSize = len(data)
+		}
+		chunks = append(chunks, data[:chunkSize])
+		data = data[chunkSize:]
 	}
-
-	logger.Debug().Msg("using legacy fragmentation")
-
-	return [][]byte{raw[:1], raw[1:]}
+	return chunks
 }
 
 // writeChunks writes the given byte slices to the connection.
@@ -204,4 +184,14 @@ func writeChunks(conn *net.TCPConn, c [][]byte) (n int, err error) {
 	}
 
 	return total, nil
+}
+
+func (h *HttpsHandler) closeBoth(from, to *net.TCPConn, fd, td string, logger zerolog.Logger) {
+	if err := from.Close(); err != nil {
+		logger.Debug().Msgf("error closing from (%s): %s", fd, err)
+	}
+	if err := to.Close(); err != nil {
+		logger.Debug().Msgf("error closing to (%s): %s", td, err)
+	}
+	logger.Debug().Msgf("closed proxy connection: %s -> %s", fd, td)
 }

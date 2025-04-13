@@ -26,12 +26,10 @@ type Args struct {
 
 type StringArray []string
 
-// String implements the flag.Value interface for StringArray.
 func (arr *StringArray) String() string {
 	return fmt.Sprintf("%s", *arr)
 }
 
-// Set implements the flag.Value interface for StringArray.
 func (arr *StringArray) Set(value string) error {
 	*arr = append(*arr, value)
 	return nil
@@ -53,31 +51,21 @@ func ParseArgs() *Args {
 	uintNVar(&args.WindowSize, "window-size", 0, `chunk size, in number of bytes, for fragmented client hello,
 try lower values if the default value doesn't bypass the DPI;
 when not given, the client hello packet will be sent in two parts:
-fragmentation for the first data packet and the rest
-`)
-	flag.BoolVar(&args.Version, "v", false, "print spoofdpi's version; this may contain some other relevant information")
-	flag.Var(
-		&args.AllowedPattern,
-		"pattern",
-		"bypass DPI only on packets matching this regex pattern; can be given multiple times",
-	)
+fragmentation for the first data packet and the rest`)
+	flag.BoolVar(&args.Version, "v", false, "print version and exit")
+
+	flag.Var(&args.AllowedPattern, "pattern", "regex to bypass DPI; can be specified multiple times")
 	flag.BoolVar(&args.DnsIPv4Only, "dns-ipv4-only", false, "resolve only version 4 addresses")
 
 	flag.Parse()
-
 	return args
 }
 
-var (
-	errParse = errors.New("parse error")
-	errRange = errors.New("value out of range")
-)
-
+// Generic unsigned constraint
 type unsigned interface {
 	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
 }
 
-// uintNVar registers a command line flag with a uintN type value.
 func uintNVar[T unsigned](p *T, name string, value T, usage string) {
 	flag.CommandLine.Var(newUintNValue(value, p), name, usage)
 }
@@ -86,24 +74,21 @@ type uintNValue[T unsigned] struct {
 	val *T
 }
 
-// uintNValue is a flag.Value implementation for unsigned integer types.
 func newUintNValue[T unsigned](val T, p *T) *uintNValue[T] {
 	*p = val
 	return &uintNValue[T]{val: p}
 }
 
-// Set sets the value of the flag from a string.
 func (u *uintNValue[T]) Set(s string) error {
 	size := int(unsafe.Sizeof(*u.val) * 8)
 	v, err := strconv.ParseUint(s, 0, size)
 	if err != nil {
-		err = numError(err)
+		return numError(err)
 	}
 	*u.val = T(v)
-	return err
+	return nil
 }
 
-// Get returns the value of the flag.
 func (u *uintNValue[T]) Get() any {
 	if u.val == nil {
 		return T(0)
@@ -111,13 +96,17 @@ func (u *uintNValue[T]) Get() any {
 	return *u.val
 }
 
-// String returns the string representation of the flag value.
 func (u *uintNValue[T]) String() string {
 	if u.val == nil {
 		return "0"
 	}
 	return strconv.FormatUint(uint64(*u.val), 10)
 }
+
+var (
+	errParse = errors.New("parse error")
+	errRange = errors.New("value out of range")
+)
 
 func numError(err error) error {
 	if errors.Is(err, strconv.ErrSyntax) {
