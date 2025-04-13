@@ -65,7 +65,13 @@ func (h *HttpHandler) Serve(ctx context.Context, lConn *net.TCPConn, pkt *packet
 }
 
 // deliverRequest reads HTTP requests from the client and forwards them to the server.
-func (h *HttpHandler) deliverRequest(ctx context.Context, from *net.TCPConn, to *net.TCPConn, fd string, td string) {
+func (h *HttpHandler) deliverRequest(
+	ctx context.Context,
+	from *net.TCPConn,
+	to *net.TCPConn,
+	fd string,
+	td string,
+) {
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
 
@@ -104,7 +110,13 @@ func (h *HttpHandler) deliverRequest(ctx context.Context, from *net.TCPConn, to 
 }
 
 // deliverResponse reads HTTP responses from the server and forwards them to the client.
-func (h *HttpHandler) deliverResponse(ctx context.Context, from *net.TCPConn, to *net.TCPConn, fd string, td string) {
+func (h *HttpHandler) deliverResponse(
+	ctx context.Context,
+	from *net.TCPConn,
+	to *net.TCPConn,
+	fd string,
+	td string,
+) {
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
 

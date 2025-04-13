@@ -14,7 +14,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags '-w -s -extldflags "-static"' -tags timetzdata -o spoofdpi ./cmd/spoofdpi
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags '-w -s -extldflags "-static"' -tags timetzdata -o spoofdpi ./cmd/spoofdpi
 
 FROM scratch
 

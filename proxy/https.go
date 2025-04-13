@@ -13,7 +13,13 @@ import (
 const protoHTTPS = "HTTPS"
 
 // handleHttps handles HTTPS requests by establishing a connection to the requested server.
-func (pxy *Proxy) handleHttps(ctx context.Context, lConn *net.TCPConn, exploit bool, initPkt *packet.HttpRequest, ip string) {
+func (pxy *Proxy) handleHttps(
+	ctx context.Context,
+	lConn *net.TCPConn,
+	exploit bool,
+	initPkt *packet.HttpRequest,
+	ip string,
+) {
 	ctx = util.GetCtxWithScope(ctx, protoHTTPS)
 	logger := log.GetCtxLogger(ctx)
 

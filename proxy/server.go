@@ -36,7 +36,15 @@ func readBytesInternal(conn *net.TCPConn, dest []byte) (int, error) {
 	return totalRead, nil
 }
 
-func Serve(ctx context.Context, from *net.TCPConn, to *net.TCPConn, proto string, fd string, td string, timeout int) {
+func Serve(
+	ctx context.Context,
+	from *net.TCPConn,
+	to *net.TCPConn,
+	proto string,
+	fd string,
+	td string,
+	timeout int,
+) {
 	ctx = util.GetCtxWithScope(ctx, proto)
 	logger := log.GetCtxLogger(ctx)
 

@@ -97,7 +97,7 @@ func (p *HttpRequest) IsConnectMethod() bool {
 	return p.Method() == "CONNECT"
 }
 
-// IsValid checks if the HTTP request is valid.
+// Tidy removes unnecessary headers and tidies up the HTTP request.
 func (p *HttpRequest) Tidy() {
 	s := string(p.raw)
 

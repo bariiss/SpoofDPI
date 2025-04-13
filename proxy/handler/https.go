@@ -22,7 +22,12 @@ type HttpsHandler struct {
 }
 
 // NewHttpsHandler creates a new HttpsHandler instance with the given timeout, window size, allowed patterns, and exploit flag.
-func NewHttpsHandler(timeout int, windowSize int, allowedPatterns []*regexp.Regexp, exploit bool) *HttpsHandler {
+func NewHttpsHandler(
+	timeout int,
+	windowSize int,
+	allowedPatterns []*regexp.Regexp,
+	exploit bool,
+) *HttpsHandler {
 	return &HttpsHandler{
 		bufferSize:      1024,
 		protocol:        "HTTPS",
@@ -35,7 +40,12 @@ func NewHttpsHandler(timeout int, windowSize int, allowedPatterns []*regexp.Rege
 }
 
 // Serve handles the HTTPS request by establishing a connection to the requested server.
-func (h *HttpsHandler) Serve(ctx context.Context, lConn *net.TCPConn, initPkt *packet.HttpRequest, ip string) {
+func (h *HttpsHandler) Serve(
+	ctx context.Context,
+	lConn *net.TCPConn,
+	initPkt *packet.HttpRequest,
+	ip string,
+) {
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
 
@@ -99,7 +109,13 @@ func (h *HttpsHandler) Serve(ctx context.Context, lConn *net.TCPConn, initPkt *p
 }
 
 // communicate handles the communication between the client and server.
-func (h *HttpsHandler) communicate(ctx context.Context, from *net.TCPConn, to *net.TCPConn, fd string, td string) {
+func (h *HttpsHandler) communicate(
+	ctx context.Context,
+	from *net.TCPConn,
+	to *net.TCPConn,
+	fd string,
+	td string,
+) {
 	ctx = util.GetCtxWithScope(ctx, h.protocol)
 	logger := log.GetCtxLogger(ctx)
 
