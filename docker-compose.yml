@@ -5,7 +5,7 @@ services:
     restart: always
     pull_policy: always
     ports:
-      - "${DOCKER_ADDR}:${DOCKER_PORT}:${APP_PORT}"
+      - "${DOCKER_PORT}:${APP_PORT}"
     networks:
       spoofdpi:
     command:
