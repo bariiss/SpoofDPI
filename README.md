@@ -1,10 +1,10 @@
-# SpoofDPI
+# SpoofDPI 🛡️
 
 A simple, fast, and cross-platform anti-censorship proxy designed to bypass **Deep Packet Inspection (DPI)**. SpoofDPI works by fragmenting TLS Client Hello packets and providing flexible DNS and proxy options to evade censorship systems.
 
 ![SpoofDPI Banner](https://user-images.githubusercontent.com/45588457/148035986-8b0076cc-fefb-48a1-9939-a8d9ab1d6322.png)
 
-# Usage
+# Usage 🚀
 ```
 Usage: spoofdpi [options...]
   -addr string
@@ -39,7 +39,7 @@ Usage: spoofdpi [options...]
 
 ---
 
-## Features
+## Features ✨
 - **Bypass DPI**: Fragments TLS Client Hello to evade DPI-based censorship.
 - **System Proxy Integration**: Automatically sets system-wide proxy on macOS (and optionally on Linux).
 - **Flexible DNS**: Supports system DNS, custom DNS, and DNS-over-HTTPS (DoH).
@@ -51,7 +51,7 @@ Usage: spoofdpi [options...]
 
 ---
 
-## Installation
+## Installation 📦
 
 ### Pre-built Binary
 A detailed installation guide is available in [`_docs/INSTALL.md`](./_docs/INSTALL.md).
@@ -67,7 +67,7 @@ Replace `<platform>` with one of: `darwin-amd64`, `darwin-arm64`, `linux-amd64`,
 go install github.com/bariiss/SpoofDPI/cmd/spoofdpi@latest
 ```
 
-### Docker
+### Docker 🐳
 ```bash
 docker run --rm -it \
   -e WINDOW_SIZE=1 \
@@ -85,20 +85,20 @@ A sample `docker-compose.yml` is provided in the repository.
 
 ---
 
-## Quick Start
+## Quick Start 🚀
 
 ### macOS
-Sadece `spoofdpi` komutunu çalıştırın. Proxy otomatik olarak ayarlanır.
+Just run the `spoofdpi` command. The proxy will be set up automatically.
 
 ### Linux
-`spoofdpi`'yi başlatın ve tarayıcınızı aşağıdaki gibi başlatın:
+Start `spoofdpi` and launch your browser with the following command:
 ```bash
 google-chrome --proxy-server="http://127.0.0.1:8080"
 ```
 
 ---
 
-## Command Line Options
+## Command Line Options ⚙️
 ```
 Usage: spoofdpi [options...]
   -addr string           listen address (default "127.0.0.1")
@@ -118,7 +118,7 @@ Usage: spoofdpi [options...]
 
 ---
 
-## How It Works
+## How It Works 🔍
 - **HTTP**: Serves as a proxy for HTTP requests (no DPI bypass, as most censorship targets HTTPS).
 - **HTTPS**: Fragments the TLS Client Hello packet (either in two parts or user-defined window size) to evade DPI systems that inspect only the first chunk.
 - **DNS**: Supports system DNS, custom DNS, and DNS-over-HTTPS for flexible name resolution.
@@ -126,7 +126,7 @@ Usage: spoofdpi [options...]
 
 ---
 
-## Configuration & Advanced Usage
+## Configuration & Advanced Usage 🛠️
 - **System Proxy**: On macOS, system proxy is set automatically (may require admin privileges). On Linux, set your browser's proxy manually.
 - **Allowed Patterns**: Use `-pattern` multiple times to specify regexes for domains to bypass DPI.
 - **Window Size**: Use `-window-size` to control TLS fragmentation granularity.
@@ -135,12 +135,12 @@ Usage: spoofdpi [options...]
 
 ---
 
-## Docker Compose Example
+## Docker Compose Example 🐳
 See [`docker-compose.yml`](./docker-compose.yml) for a ready-to-use configuration.
 
 ---
 
-## Project Structure
+## Project Structure 📁
 - `cmd/spoofdpi/` : Main entrypoint
 - `proxy/`        : Proxy server logic (HTTP/HTTPS, handlers)
 - `dns/`          : DNS resolver logic (system, custom, DoH)
@@ -151,16 +151,26 @@ See [`docker-compose.yml`](./docker-compose.yml) for a ready-to-use configuratio
 
 ---
 
-## License
+## Technical Details 🔧
+- **Go Version**: Built with Go 1.24.2
+- **License**: Apache License 2.0
+- **Dependencies**:
+  - github.com/miekg/dns v1.1.65
+  - github.com/pterm/pterm v0.12.80
+  - github.com/rs/zerolog v1.34.0
+
+---
+
+## License 📄
 This project is licensed under the Apache License 2.0. See [LICENSE](./LICENSE) for details.
 
 ---
 
-## Inspirations
+## Inspirations 💡
 - [Green Tunnel](https://github.com/SadeghHayeri/GreenTunnel) by @SadeghHayeri
 - [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) by @ValdikSS
 
 ---
 
-## Contributing
+## Contributing 🤝
 Pull requests and issues are welcome! Please see the code and documentation for contribution guidelines.
