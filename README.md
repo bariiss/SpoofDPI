@@ -1,8 +1,8 @@
 # SpoofDPI
 
-A simple and fast software designed to bypass **Deep Packet Inspection**.
+A simple, fast, and cross-platform anti-censorship proxy designed to bypass **Deep Packet Inspection (DPI)**. SpoofDPI works by fragmenting TLS Client Hello packets and providing flexible DNS and proxy options to evade censorship systems.
 
-![image](https://user-images.githubusercontent.com/45588457/148035986-8b0076cc-fefb-48a1-9939-a8d9ab1d6322.png)
+![SpoofDPI Banner](https://user-images.githubusercontent.com/45588457/148035986-8b0076cc-fefb-48a1-9939-a8d9ab1d6322.png)
 
 # Usage
 ```
@@ -36,30 +36,131 @@ Usage: spoofdpi [options...]
         when not given, the client hello packet will be sent in two parts:
         fragmentation for the first data packet and the rest
 ```
-> If you are using any vpn extensions such as Hotspot Shield in Chrome browser,
-  go to Settings > Extensions, and disable them.
 
-### OSX
-Run `spoofdpi` and it will automatically set your proxy
+---
+
+## Features
+- **Bypass DPI**: Fragments TLS Client Hello to evade DPI-based censorship.
+- **System Proxy Integration**: Automatically sets system-wide proxy on macOS (and optionally on Linux).
+- **Flexible DNS**: Supports system DNS, custom DNS, and DNS-over-HTTPS (DoH).
+- **Pattern-based Whitelisting**: Only bypass DPI for domains matching user-defined regex patterns.
+- **IPv4/IPv6 Support**: Optionally restrict DNS to IPv4 only.
+- **Configurable Timeout & Window Size**: Fine-tune fragmentation and connection behavior.
+- **Silent & Debug Modes**: Control output verbosity.
+- **Docker Support**: Run easily in containers.
+
+---
+
+## Installation
+
+### Pre-built Binary
+A detailed installation guide is available in [`_docs/INSTALL.md`](./_docs/INSTALL.md).
+
+Quick install (macOS/Linux):
+```bash
+curl -fsSL https://raw.githubusercontent.com/bariiss/SpoofDPI/main/install.sh | bash -s <platform>
+```
+Replace `<platform>` with one of: `darwin-amd64`, `darwin-arm64`, `linux-amd64`, `linux-arm`, `linux-arm64`, `linux-mips`, `linux-mipsle`.
+
+### Go
+```bash
+go install github.com/bariiss/SpoofDPI/cmd/spoofdpi@latest
+```
+
+### Docker
+```bash
+docker run --rm -it \
+  -e WINDOW_SIZE=1 \
+  -e APP_PORT=8080 \
+  -e APP_ADDR=0.0.0.0 \
+  -e DOH_ENABLED=false \
+  -e DNS_ADDR=8.8.8.8 \
+  -e DNS_PORT=53 \
+  -e SYSTEM_PROXY=false \
+  -e DEBUG_MODE=true \
+  -p 8080:8080 \
+  ghcr.io/bariiss/spoofdpi:latest
+```
+A sample `docker-compose.yml` is provided in the repository.
+
+---
+
+## Quick Start
+
+### macOS
+Sadece `spoofdpi` komutunu çalıştırın. Proxy otomatik olarak ayarlanır.
 
 ### Linux
-Run `spoofdpi` and open your favorite browser with proxy option
+`spoofdpi`'yi başlatın ve tarayıcınızı aşağıdaki gibi başlatın:
 ```bash
 google-chrome --proxy-server="http://127.0.0.1:8080"
 ```
 
-# How it works
-### HTTP
- Since most websites in the world now support HTTPS, SpoofDPI doesn't bypass Deep Packet Inspections for HTTP requests, However, it still serves proxy connection for all HTTP requests.
+---
 
-### HTTPS
- Although TLS encrypts every handshake process, the domain names are still shown as plaintext in the Client hello packet.
- In other words, when someone else looks on the packet, they can easily guess where the packet is headed to.
- The domain name can offer significant information while DPI is being processed, and we can actually see that the connection is blocked right after sending Client hello packet.
- I had tried some ways to bypass this and found out that it seemed like only the first chunk gets inspected when we send the Client hello packet split into chunks.
- What SpoofDPI does to bypass this is to send the first 1 byte of a request to the server,
- and then send the rest.
+## Command Line Options
+```
+Usage: spoofdpi [options...]
+  -addr string           listen address (default "127.0.0.1")
+  -port value            port (default 8080)
+  -dns-addr string       dns address (default "8.8.8.8")
+  -dns-port value        port number for dns (default 53)
+  -dns-ipv4-only         resolve only version 4 addresses
+  -enable-doh            enable 'dns-over-https'
+  -pattern value         bypass DPI only on packets matching this regex pattern; can be given multiple times
+  -window-size value     chunk size, in number of bytes, for fragmented client hello
+  -timeout value         timeout in milliseconds; no timeout when not given
+  -system-proxy          enable system-wide proxy (default true)
+  -debug                 enable debug output
+  -silent                do not show the banner and server information at start up
+  -v                     print spoofdpi's version and exit
+```
 
-# Inspirations
-[Green Tunnel](https://github.com/SadeghHayeri/GreenTunnel) by @SadeghHayeri  
-[GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) by @ValdikSS
+---
+
+## How It Works
+- **HTTP**: Serves as a proxy for HTTP requests (no DPI bypass, as most censorship targets HTTPS).
+- **HTTPS**: Fragments the TLS Client Hello packet (either in two parts or user-defined window size) to evade DPI systems that inspect only the first chunk.
+- **DNS**: Supports system DNS, custom DNS, and DNS-over-HTTPS for flexible name resolution.
+- **Pattern Matching**: DPI bypass is only applied to domains matching the provided regex patterns (if any).
+
+---
+
+## Configuration & Advanced Usage
+- **System Proxy**: On macOS, system proxy is set automatically (may require admin privileges). On Linux, set your browser's proxy manually.
+- **Allowed Patterns**: Use `-pattern` multiple times to specify regexes for domains to bypass DPI.
+- **Window Size**: Use `-window-size` to control TLS fragmentation granularity.
+- **Debugging**: Use `-debug` for verbose logs.
+- **Silent Mode**: Use `-silent` to suppress banner and info output.
+
+---
+
+## Docker Compose Example
+See [`docker-compose.yml`](./docker-compose.yml) for a ready-to-use configuration.
+
+---
+
+## Project Structure
+- `cmd/spoofdpi/` : Main entrypoint
+- `proxy/`        : Proxy server logic (HTTP/HTTPS, handlers)
+- `dns/`          : DNS resolver logic (system, custom, DoH)
+- `packet/`       : HTTP/TLS packet parsing and manipulation
+- `util/`         : Utilities (args, config, logging, OS integration)
+- `version/`      : Versioning
+- `_docs/`        : Additional documentation
+
+---
+
+## License
+This project is licensed under the Apache License 2.0. See [LICENSE](./LICENSE) for details.
+
+---
+
+## Inspirations
+- [Green Tunnel](https://github.com/SadeghHayeri/GreenTunnel) by @SadeghHayeri
+- [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) by @ValdikSS
+
+---
+
+## Contributing
+Pull requests and issues are welcome! Please see the code and documentation for contribution guidelines.
