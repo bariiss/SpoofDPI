@@ -57,16 +57,65 @@ jobs:
           IMAGE_NAME="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
           echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
-      # Step 6: Build and Push Multi-Architecture Docker Image
-      - name: Build and Push Multi-Arch Docker Image
+      # Step 6: Build and Push Multi-Arch Image (Original)
+      - name: Build and Push Multi-Arch Image (Original)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: ${{ env.PLATFORMS }}
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ steps.set_image_name.outputs.image_name }}:${{ env.VERSION }}
-            ${{ steps.set_image_name.outputs.image_name }}:latest
-          no-cache: true
-          provenance: false
+          tags: ${{ steps.set_image_name.outputs.image_name }}:latest
+
+      # Step 7: Build and Push Multi-Arch Image (Slim)
+      - name: Build amd64-only local image for Slim
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: radio-player:slim-candidate-amd64
+
+      # Step 8: Build and Push Multi-Arch Image (Slim)
+      - name: Build arm64-only local image for Slim
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64
+          push: false
+          tags: radio-player:slim-candidate-arm64
+
+      # Step 9: DockerSlim - Minify AMD64 Image
+      - name: DockerSlim - Minify AMD64 Image
+        uses: kitabisa/docker-slim-action@v1
+        env:
+          DSLIM_HTTP_PROBE: false
+        with:
+          target: radio-player:slim-candidate-amd64
+          tag: ${{ steps.set_image_name.outputs.image_name }}:slim-amd64
+
+      # Step 10: DockerSlim - Minify ARM64 Image
+      - name: DockerSlim - Minify ARM64 Image
+        uses: kitabisa/docker-slim-action@v1
+        env:
+          DSLIM_HTTP_PROBE: false
+        with:
+          target: radio-player:slim-candidate-arm64
+          tag: ${{ steps.set_image_name.outputs.image_name }}:slim-arm64
+
+      # Step 11: Create Multi-Arch Slim Manifest
+      - name: Create Multi-Arch Slim Manifest
+        run: |
+          docker manifest create ${{ steps.set_image_name.outputs.image_name }}:slim \
+            --amend ${{ steps.set_image_name.outputs.image_name }}:slim-amd64 \
+            --amend ${{ steps.set_image_name.outputs.image_name }}:slim-arm64
+          
+          docker manifest push ${{ steps.set_image_name.outputs.image_name }}:slim
+
+      # Step 12: Push Multi-Arch Slim Manifest
+      - name: Push Platform-Specific Slim Images (Optional)
+        run: |
+          docker push ${{ steps.set_image_name.outputs.image_name }}:slim-amd64
+          docker push ${{ steps.set_image_name.outputs.image_name }}:slim-arm64
