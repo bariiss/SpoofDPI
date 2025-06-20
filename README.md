@@ -97,8 +97,36 @@ make service-stop       # Stop the service
 make service-restart    # Restart the service
 make service-status     # Check service status
 make service-logs       # View service logs
+make service-reload     # Reload service configuration
 make service-uninstall  # Remove service completely
-make help              # Show all available commands
+make help               # Show all available commands
+make show-config        # Display current configuration and OS info
+```
+
+#### Browser Launch Commands (Both Platforms)
+Automatically launch browsers with proxy configuration:
+```bash
+make browser            # Launch browser with current proxy settings
+make browser-custom     # Launch browser with custom proxy settings
+
+# Configuration with current service settings:
+make browser-custom PORT=9090 ADDR=127.0.0.1
+
+# Development workflow:
+make dev-run                   # Run without service (for development)
+make dev-test                  # Run tests
+```
+
+**Supported Browsers:**
+- **macOS**: Google Chrome (with isolated user profile)
+- **Ubuntu/Linux**: Google Chrome → Chromium → Firefox (automatic detection and fallback)
+
+**Browser Features:**
+- **Profile Isolation**: Creates separate browser profiles for proxy usage
+- **Automatic Configuration**: Sets HTTP/HTTPS proxy settings automatically  
+- **Background Execution**: Browsers launch without blocking the terminal
+- **Dynamic Settings**: Uses current service configuration or custom parameters
+
 ```
 
 #### Custom Configuration
@@ -109,17 +137,30 @@ make service-config PORT=8080 ENABLE_DOH=false SYSTEM_PROXY=true
 
 # Available parameters:
 # PORT=8080                   - Proxy port
-# DNS=1.1.1.1                 - DNS server
+# DNS=8.8.8.8                 - DNS server
 # ADDR=0.0.0.0                - Bind address  
 # WINDOW_SIZE=1               - TLS fragmentation window size
-# ENABLE_DOH=true             - Enable DNS over HTTPS
+# ENABLE_DOH=false            - Enable DNS over HTTPS
 # SYSTEM_PROXY=false          - Enable system-wide proxy
+
+# Development commands
+make dev-run                    # Run binary directly without service
+make dev-test                   # Run tests
+make show-config                # Display current configuration
 ```
 
 #### Platform-Specific Features:
 - **macOS**: Uses Homebrew for Go installation, launchd for service management
 - **Ubuntu/Linux**: Uses APT for Go installation, systemd for service management
 - **Both**: Automatic OS detection, user-level services, personalized service names
+
+#### Default Configuration:
+- **Port**: 8080
+- **DNS Server**: 8.8.8.8 (Google DNS)
+- **Bind Address**: 0.0.0.0 (all interfaces)
+- **DoH**: Disabled by default
+- **System Proxy**: Disabled by default
+- **Window Size**: 1 (for TLS fragmentation)
 
 The Makefile automatically:
 - Detects your operating system (macOS/Linux)
@@ -180,8 +221,19 @@ make all
 # Check service status
 make service-status
 
-# View logs
+# Launch browser with proxy configuration
+make browser
+
+# View logs if needed
 make service-logs
+
+# Complete workflow example:
+# 1. Configure custom settings
+make service-config PORT=9090 DNS=1.1.1.1 ENABLE_DOH=true
+# 2. Restart to apply changes  
+make service-restart
+# 3. Launch browser with new settings
+make browser-custom PORT=9090
 ```
 
 ### Platform-Specific Details
@@ -189,11 +241,13 @@ make service-logs
 #### macOS
 - **Automatic**: Uses Homebrew for Go installation and launchd for service management
 - **Service**: Creates `com.<username>.spoofdpi.plist` in `~/Library/LaunchAgents/`
+- **Browser**: Launches Google Chrome with isolated profile using `open -na "Google Chrome"`
 - **Manual**: Just run the `spoofdpi` command. The proxy will be set up automatically.
 
 #### Ubuntu/Linux
 - **Automatic**: Uses APT for Go installation and systemd for service management  
 - **Service**: Creates `com.<username>.spoofdpi.service` in `~/.config/systemd/user/`
+- **Browser**: Auto-detects and launches Chrome → Chromium → Firefox with proxy settings
 - **Manual**: Start `spoofdpi` and launch your browser with the following command:
 ```bash
 google-chrome --proxy-server="http://127.0.0.1:8080"
@@ -242,7 +296,7 @@ make help
 make show-config
 
 # Configure service with custom parameters
-make service-config PORT=9090 DNS=1.1.1.1 ENABLE_DOH=true
+make service-config PORT=9090 DNS=8.8.8.8 ENABLE_DOH=true
 
 # Apply configuration changes
 make service-restart
@@ -251,8 +305,19 @@ make service-restart
 make service-status
 make service-logs
 
+# Launch browser with proxy configuration
+make browser
+make browser-custom PORT=9090 ADDR=127.0.0.1
+
 # Development mode (run without service)
 make dev-run
+
+# Test the code
+make dev-test
+
+# Docker workflow
+make docker-build              # Build Docker image
+make docker-run                # Run container with default settings
 ```
 
 #### Platform-Specific Service Behavior:
@@ -281,9 +346,35 @@ make dev-run
 - **Debugging**: Use `-debug` for verbose logs.
 - **Silent Mode**: Use `-silent` to suppress banner and info output.
 
----
+### Browser Management
+The Makefile provides cross-platform browser integration with automatic proxy configuration:
 
-## Troubleshooting 🔧
+**Basic Usage:**
+```bash
+make browser            # Launch with current service settings
+make browser-custom PORT=9090 ADDR=127.0.0.1  # Launch with custom settings
+```
+
+**Platform-Specific Browser Support:**
+
+**macOS:**
+- **Google Chrome**: Primary browser with isolated user profile
+- **Profile**: `~/.chrome-proxy-{PORT}` for session isolation
+- **Command**: Uses `open -na "Google Chrome"` with proxy arguments
+
+**Ubuntu/Linux:**
+- **Google Chrome**: Preferred browser if available
+- **Chromium**: Fallback if Chrome not found
+- **Firefox**: Final fallback with custom profile and proxy preferences
+- **Auto-detection**: Automatically finds and configures available browsers
+
+**Browser Features:**
+- **Isolated Profiles**: Separate browser profiles prevent interference with existing sessions
+- **Automatic Configuration**: HTTP/HTTPS proxy settings applied automatically
+- **Background Launch**: Browsers start without blocking the terminal
+- **Custom Settings**: Override default port and address as needed
+
+---
 
 ## Troubleshooting 🔧
 
@@ -317,17 +408,20 @@ systemctl --user status com.$(whoami).spoofdpi.service
 - **Homebrew not found**: Install Homebrew first or install Go manually
 - **launchctl errors**: Check if service file exists in `~/Library/LaunchAgents/`
 - **Permission issues**: May need admin privileges for system proxy settings
+- **Chrome won't launch**: Ensure Google Chrome is installed, try `make browser-custom`
 
 **Ubuntu/Linux Issues:**
 - **systemd not available**: Ensure systemd is installed and running
 - **Go installation fails**: Run `sudo apt update` first or install Go manually
 - **Service not starting**: Check `systemctl --user status` for detailed error messages
+- **No browsers found**: Install Chrome, Chromium, or Firefox for automatic browser launch
 
 ### Common Issues (Both Platforms)
 - **Permission denied**: Make sure `~/go/bin` is in your PATH and the binary has execute permissions
 - **Service won't start**: Check logs with `make service-logs` and ensure no other process is using the configured port
-- **DNS issues**: Try different DNS servers with `make service-config DNS=1.1.1.1`
+- **DNS issues**: Try different DNS servers with `make service-config DNS=1.1.1.1` (Cloudflare) or `DNS=8.8.8.8` (Google)
 - **Connection problems**: Adjust window size with `make service-config WINDOW_SIZE=2`
+- **Browser issues**: If `make browser` fails, manually configure your browser to use proxy at the displayed address
 - **OS not supported**: The Makefile supports macOS and Ubuntu/Linux. For other systems, use `make dev-run` for manual execution
 
 ---
@@ -338,14 +432,15 @@ See [`docker-compose.yml`](./docker-compose.yml) for a ready-to-use configuratio
 ---
 
 ## Project Structure 📁
-- `Makefile`      : macOS service management and build automation
-- `cmd/spoofdpi/` : Main entrypoint
-- `proxy/`        : Proxy server logic (HTTP/HTTPS, handlers)
-- `dns/`          : DNS resolver logic (system, custom, DoH)
-- `packet/`       : HTTP/TLS packet parsing and manipulation
-- `util/`         : Utilities (args, config, logging, OS integration)
-- `version/`      : Versioning
-- `_docs/`        : Additional documentation
+- `Makefile`       : Cross-platform service management and build automation
+- `cmd/spoofdpi/`  : Main entrypoint
+- `proxy/`         : Proxy server logic (HTTP/HTTPS, handlers)
+- `dns/`           : DNS resolver logic (system, custom, DoH)
+- `packet/`        : HTTP/TLS packet parsing and manipulation
+- `util/`          : Utilities (args, config, logging, OS integration)
+- `version/`       : Versioning
+- `_docs/`         : Additional documentation
+- `docker-compose.yml` : Docker container configuration
 
 ---
 

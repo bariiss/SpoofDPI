@@ -32,7 +32,7 @@ SERVICE_PATH = $(SERVICE_DIR)/$(SERVICE_FILE)
 
 # Default configuration for plist
 DEFAULT_PORT = 8080
-DEFAULT_DNS = 1.1.1.1
+DEFAULT_DNS = 8.8.8.8
 DEFAULT_ADDR = 0.0.0.0
 DEFAULT_WINDOW_SIZE = 1
 DEFAULT_ENABLE_DOH = false
@@ -45,7 +45,7 @@ YELLOW = \033[0;33m
 BLUE = \033[0;34m
 NC = \033[0m
 
-.PHONY: help build install clean check-deps service-install service-start service-stop service-restart service-uninstall service-status service-logs service-reload service-config all check-deps
+.PHONY: help build install clean check-deps service-install service-start service-stop service-restart service-uninstall service-status service-logs service-reload service-config browser browser-custom all check-deps
 
 # Default target
 all: check-deps build install service-install service-start
@@ -73,6 +73,10 @@ help: ## Show this help message
 	@echo "  show-config          Show current service configuration"
 	@echo "  service-config       Configure service with custom parameters"
 	@echo ""
+	@echo "$(YELLOW)Browser Commands:$(NC)"
+	@echo "  browser              Launch browser with proxy configuration"
+	@echo "  browser-custom       Launch browser with custom proxy settings"
+	@echo ""
 	@echo "$(YELLOW)Combined Commands:$(NC)"
 	@echo "  all                  Build, install, and start service"
 	@echo ""
@@ -92,6 +96,7 @@ help: ## Show this help message
 	@echo "  SYSTEM_PROXY=$(DEFAULT_SYSTEM_PROXY)         - Enable system proxy"
 	@echo ""
 	@echo "$(YELLOW)Example:$(NC) make service-config PORT=8080 ENABLE_DOH=false SYSTEM_PROXY=true"
+	@echo "$(YELLOW)Browser:$(NC) make browser-custom PORT=9090 ADDR=127.0.0.1"
 
 build: check-deps ## Build the binary
 	@echo "$(BLUE)Building $(BINARY_NAME)...$(NC)"
@@ -347,3 +352,54 @@ show-config: ## Show current service configuration
 	@echo "Default Address: $(DEFAULT_ADDR)"
 	@echo "Default Enable DoH: $(DEFAULT_ENABLE_DOH)"
 	@echo "Default System Proxy: $(DEFAULT_SYSTEM_PROXY)"
+
+# Browser launch targets
+browser: ## Launch browser with proxy configuration
+	@echo "$(BLUE)Launching browser with proxy configuration on $(OS)...$(NC)"
+ifeq ($(OS),macos)
+	@echo "$(YELLOW)Opening Google Chrome with proxy settings...$(NC)"
+	@open -na "Google Chrome" --args \
+		--user-data-dir="$(HOME)/.chrome-proxy-$(DEFAULT_PORT)" \
+		--proxy-server="http=$(DEFAULT_ADDR):$(DEFAULT_PORT);https=$(DEFAULT_ADDR):$(DEFAULT_PORT)"
+	@echo "$(GREEN)Chrome launched with proxy: $(DEFAULT_ADDR):$(DEFAULT_PORT)$(NC)"
+else ifeq ($(OS),linux)
+	@echo "$(YELLOW)Launching browser with proxy settings...$(NC)"
+	@if command -v google-chrome >/dev/null 2>&1; then \
+		google-chrome \
+			--user-data-dir="$(HOME)/.chrome-proxy-$(DEFAULT_PORT)" \
+			--proxy-server="http=$(DEFAULT_ADDR):$(DEFAULT_PORT);https=$(DEFAULT_ADDR):$(DEFAULT_PORT)" \
+			>/dev/null 2>&1 & \
+		echo "$(GREEN)Google Chrome launched with proxy: $(DEFAULT_ADDR):$(DEFAULT_PORT)$(NC)"; \
+	elif command -v chromium-browser >/dev/null 2>&1; then \
+		chromium-browser \
+			--user-data-dir="$(HOME)/.chromium-proxy-$(DEFAULT_PORT)" \
+			--proxy-server="http=$(DEFAULT_ADDR):$(DEFAULT_PORT);https=$(DEFAULT_ADDR):$(DEFAULT_PORT)" \
+			>/dev/null 2>&1 & \
+		echo "$(GREEN)Chromium launched with proxy: $(DEFAULT_ADDR):$(DEFAULT_PORT)$(NC)"; \
+	elif command -v firefox >/dev/null 2>&1; then \
+		echo "$(YELLOW)Firefox detected. Creating temporary profile with proxy...$(NC)"; \
+		PROFILE_DIR="$(HOME)/.firefox-proxy-$(DEFAULT_PORT)"; \
+		mkdir -p "$$PROFILE_DIR"; \
+		echo 'user_pref("network.proxy.type", 1);' > "$$PROFILE_DIR/prefs.js"; \
+		echo 'user_pref("network.proxy.http", "$(DEFAULT_ADDR)");' >> "$$PROFILE_DIR/prefs.js"; \
+		echo 'user_pref("network.proxy.http_port", $(DEFAULT_PORT));' >> "$$PROFILE_DIR/prefs.js"; \
+		echo 'user_pref("network.proxy.ssl", "$(DEFAULT_ADDR)");' >> "$$PROFILE_DIR/prefs.js"; \
+		echo 'user_pref("network.proxy.ssl_port", $(DEFAULT_PORT));' >> "$$PROFILE_DIR/prefs.js"; \
+		firefox --profile "$$PROFILE_DIR" >/dev/null 2>&1 & \
+		echo "$(GREEN)Firefox launched with proxy: $(DEFAULT_ADDR):$(DEFAULT_PORT)$(NC)"; \
+	else \
+		echo "$(RED)No supported browser found (Chrome, Chromium, or Firefox)$(NC)"; \
+		echo "$(YELLOW)Please manually configure your browser to use proxy: $(DEFAULT_ADDR):$(DEFAULT_PORT)$(NC)"; \
+		exit 1; \
+	fi
+else
+	@echo "$(RED)Browser launch not supported on $(UNAME_S)$(NC)"
+	@echo "$(YELLOW)Please manually configure your browser to use proxy: $(DEFAULT_ADDR):$(DEFAULT_PORT)$(NC)"
+	@exit 1
+endif
+
+browser-custom: ## Launch browser with custom proxy settings (e.g., make browser-custom PORT=9090 ADDR=127.0.0.1)
+	@echo "$(BLUE)Launching browser with custom proxy configuration...$(NC)"
+	@$(MAKE) browser \
+		DEFAULT_PORT=$(or $(PORT),$(DEFAULT_PORT)) \
+		DEFAULT_ADDR=$(or $(ADDR),$(DEFAULT_ADDR))
