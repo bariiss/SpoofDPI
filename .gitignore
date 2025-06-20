@@ -3,6 +3,7 @@ spoof-dpi-*
 spoof-dpi.*
 !*/spoof-dpi/
 out/**
+Makefile
 build/
 
 .DS_Store
