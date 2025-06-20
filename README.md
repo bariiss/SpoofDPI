@@ -229,7 +229,7 @@ make service-logs
 
 # Complete workflow example:
 # 1. Configure custom settings
-make service-config PORT=9090 DNS=1.1.1.1 ENABLE_DOH=true
+make service-config PORT=9090 DNS=8.8.8.8 ENABLE_DOH=true
 # 2. Restart to apply changes  
 make service-restart
 # 3. Launch browser with new settings
@@ -419,7 +419,7 @@ systemctl --user status com.$(whoami).spoofdpi.service
 ### Common Issues (Both Platforms)
 - **Permission denied**: Make sure `~/go/bin` is in your PATH and the binary has execute permissions
 - **Service won't start**: Check logs with `make service-logs` and ensure no other process is using the configured port
-- **DNS issues**: Try different DNS servers with `make service-config DNS=1.1.1.1` (Cloudflare) or `DNS=8.8.8.8` (Google)
+- **DNS issues**: Try different DNS servers with `make service-config DNS=8.8.8.8` (Cloudflare) or `DNS=8.8.8.8` (Google)
 - **Connection problems**: Adjust window size with `make service-config WINDOW_SIZE=2`
 - **Browser issues**: If `make browser` fails, manually configure your browser to use proxy at the displayed address
 - **OS not supported**: The Makefile supports macOS and Ubuntu/Linux. For other systems, use `make dev-run` for manual execution
