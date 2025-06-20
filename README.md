@@ -53,6 +53,55 @@ Usage: spoofdpi [options...]
 
 ## Installation 📦
 
+### Using Makefile (macOS - Recommended) 🍎
+The easiest way to install and manage SpoofDPI on macOS is using the included Makefile, which provides automated service management with launchd:
+
+```bash
+# Clone the repository
+git clone https://github.com/bariiss/SpoofDPI.git
+cd SpoofDPI
+
+# Build, install, and start as a service (all in one)
+make all
+
+# Or step by step:
+make build           # Build the binary
+make install         # Install to ~/go/bin
+make service-install # Create launchd service
+make service-start   # Start the service
+```
+
+#### Service Management Commands
+```bash
+make service-start      # Start the service
+make service-stop       # Stop the service
+make service-restart    # Restart the service
+make service-status     # Check service status
+make service-logs       # View service logs
+make service-uninstall  # Remove service completely
+```
+
+#### Custom Configuration
+You can configure the service with custom parameters:
+```bash
+# Configure with custom settings
+make service-config PORT=8080 ENABLE_DOH=false SYSTEM_PROXY=true
+
+# Available parameters:
+# PORT=8080                    - Proxy port
+# DNS=1.1.1.1                 - DNS server
+# ADDR=0.0.0.0                - Bind address  
+# WINDOW_SIZE=1               - TLS fragmentation window size
+# ENABLE_DOH=true             - Enable DNS over HTTPS
+# SYSTEM_PROXY=false          - Enable system-wide proxy
+```
+
+The Makefile automatically:
+- Detects your username and creates a personalized service (`com.<username>.spoofdpi`)
+- Manages launchd service lifecycle
+- Handles service logs (`/tmp/spoofdpi.log` and `/tmp/spoofdpi.err`)
+- Provides easy configuration updates
+
 ### Pre-built Binary
 A detailed installation guide is available in [`_docs/INSTALL.md`](./_docs/INSTALL.md).
 
@@ -69,6 +118,11 @@ go install github.com/bariiss/SpoofDPI/cmd/spoofdpi@latest
 
 ### Docker 🐳
 ```bash
+# Using Makefile
+make docker-build    # Build Docker image
+make docker-run      # Run Docker container
+
+# Manual Docker usage
 docker run --rm -it \
   -e WINDOW_SIZE=1 \
   -e APP_PORT=8080 \
@@ -87,7 +141,21 @@ A sample `docker-compose.yml` is provided in the repository.
 
 ## Quick Start 🚀
 
-### macOS
+### macOS with Makefile (Recommended)
+```bash
+# Clone and setup as a service
+git clone https://github.com/bariiss/SpoofDPI.git
+cd SpoofDPI
+make all
+
+# Check service status
+make service-status
+
+# View logs
+make service-logs
+```
+
+### macOS (Manual)
 Just run the `spoofdpi` command. The proxy will be set up automatically.
 
 ### Linux
@@ -127,11 +195,73 @@ Usage: spoofdpi [options...]
 ---
 
 ## Configuration & Advanced Usage 🛠️
+
+### Service Management (macOS)
+When using the Makefile approach, SpoofDPI runs as a persistent launchd service:
+
+```bash
+# View all available commands
+make help
+
+# Show current configuration
+make show-config
+
+# Configure service with custom parameters
+make service-config PORT=9090 DNS=1.1.1.1 ENABLE_DOH=true
+
+# Apply configuration changes
+make service-restart
+
+# Monitor service
+make service-status
+make service-logs
+
+# Development mode (run without service)
+make dev-run
+```
+
+The service automatically:
+- Starts on system boot (`RunAtLoad=true`)
+- Restarts if it crashes (`KeepAlive=true`)
+- Logs to `/tmp/spoofdpi.log` and `/tmp/spoofdpi.err`
+- Uses your username in the service name (`com.<username>.spoofdpi`)
+
+### Manual Configuration
 - **System Proxy**: On macOS, system proxy is set automatically (may require admin privileges). On Linux, set your browser's proxy manually.
 - **Allowed Patterns**: Use `-pattern` multiple times to specify regexes for domains to bypass DPI.
 - **Window Size**: Use `-window-size` to control TLS fragmentation granularity.
 - **Debugging**: Use `-debug` for verbose logs.
 - **Silent Mode**: Use `-silent` to suppress banner and info output.
+
+---
+
+## Troubleshooting 🔧
+
+### macOS Service Issues
+```bash
+# Check if service is running
+make service-status
+
+# View service logs
+make service-logs
+
+# Restart service if having issues
+make service-restart
+
+# Completely reinstall service
+make service-uninstall
+make service-install
+make service-start
+
+# Check launchd directly
+launchctl print gui/$(id -u)/com.$(whoami).spoofdpi
+```
+
+### Common Issues
+- **Permission denied**: Make sure `~/go/bin` is in your PATH and the binary has execute permissions
+- **Service won't start**: Check logs with `make service-logs` and ensure no other process is using the configured port
+- **DNS issues**: Try different DNS servers with `make service-config DNS=1.1.1.1`
+- **Connection problems**: Adjust window size with `make service-config WINDOW_SIZE=2`
 
 ---
 
@@ -141,6 +271,7 @@ See [`docker-compose.yml`](./docker-compose.yml) for a ready-to-use configuratio
 ---
 
 ## Project Structure 📁
+- `Makefile`      : macOS service management and build automation
 - `cmd/spoofdpi/` : Main entrypoint
 - `proxy/`        : Proxy server logic (HTTP/HTTPS, handlers)
 - `dns/`          : DNS resolver logic (system, custom, DoH)
