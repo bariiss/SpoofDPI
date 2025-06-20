@@ -88,7 +88,7 @@ You can configure the service with custom parameters:
 make service-config PORT=8080 ENABLE_DOH=false SYSTEM_PROXY=true
 
 # Available parameters:
-# PORT=8080                    - Proxy port
+# PORT=8080                   - Proxy port
 # DNS=1.1.1.1                 - DNS server
 # ADDR=0.0.0.0                - Bind address  
 # WINDOW_SIZE=1               - TLS fragmentation window size
