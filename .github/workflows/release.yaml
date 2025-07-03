@@ -64,6 +64,38 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate changelog between tags
+        id: changelog
+        run: |
+          TAG_NAME="v${{ steps.read_version.outputs.version }}"
+          
+          # Get the previous tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${TAG_NAME}$" | head -n 1)
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, showing all commits"
+            CHANGELOG=$(git log --oneline --pretty=format:"* %s (%h)" HEAD)
+          else
+            echo "Generating changelog from $PREVIOUS_TAG to current HEAD"
+            CHANGELOG=$(git log --oneline --pretty=format:"* %s (%h)" ${PREVIOUS_TAG}..HEAD)
+          fi
+          
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="* No changes since last release"
+          fi
+          
+          echo "Generated changelog:"
+          echo "$CHANGELOG"
+          
+          # Save changelog to file and output
+          echo "$CHANGELOG" > changelog.md
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Also save previous tag info
+          echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+
       - uses: release-drafter/release-drafter@v6
         id: release
         with:
@@ -71,6 +103,26 @@ jobs:
           name: v${{ steps.read_version.outputs.version }}
           tag: v${{ steps.read_version.outputs.version }}
           publish: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update release with changelog
+        run: |
+          TAG_NAME="v${{ steps.read_version.outputs.version }}"
+          CHANGELOG="${{ steps.changelog.outputs.changelog }}"
+          PREVIOUS_TAG="${{ steps.changelog.outputs.previous_tag }}"
+          
+          RELEASE_BODY="## Changes
+
+          $CHANGELOG
+
+          ## Previous Release
+          Previous version: ${PREVIOUS_TAG:-'None'}
+
+          ## Assets
+          Download the appropriate binary for your platform from the assets below."
+          
+          gh release edit "$TAG_NAME" --notes "$RELEASE_BODY"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
