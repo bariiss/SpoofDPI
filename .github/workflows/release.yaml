@@ -69,12 +69,13 @@ jobs:
         run: |
           TAG_NAME="v${{ steps.read_version.outputs.version }}"
           
-          # Get the previous tag
-          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${TAG_NAME}$" | head -n 1)
+          # Get all tags sorted by creation date (most recent first), excluding current tag
+          PREVIOUS_TAG=$(git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/tags | grep -v "^${TAG_NAME}$" | head -n 1)
           
           if [ -z "$PREVIOUS_TAG" ]; then
-            echo "No previous tag found, showing all commits"
-            CHANGELOG=$(git log --oneline --pretty=format:"* %s (%h)" HEAD)
+            echo "No previous tag found, showing recent commits"
+            # Show last 10 commits if no previous tag
+            CHANGELOG=$(git log --oneline --pretty=format:"* %s (%h)" -10 HEAD)
           else
             echo "Generating changelog from $PREVIOUS_TAG to current HEAD"
             CHANGELOG=$(git log --oneline --pretty=format:"* %s (%h)" ${PREVIOUS_TAG}..HEAD)
