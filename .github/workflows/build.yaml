@@ -18,7 +18,6 @@ concurrency:
 
 env:
   PLATFORMS: linux/amd64,linux/arm64
-  VERSION: v0.12.1
 
 jobs:
   build-and-push:
@@ -32,17 +31,27 @@ jobs:
         with:
           submodules: recursive
 
-      # Step 2: Set up QEMU (for multi-architecture builds)
+      # Step 2: Read version from file
+      - name: Read version
+        id: read_version
+        run: echo "version=v$(cat version/VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      # Step 3: Print version
+      - name: Print version
+        run: |
+          echo "Version: ${{ steps.read_version.outputs.version }}"
+
+      # Step 4: Set up QEMU (for multi-architecture builds)
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
 
-      # Step 3: Set up Docker Buildx
+      # Step 5: Set up Docker Buildx
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           platforms: ${{ env.PLATFORMS }}
 
-      # Step 4: Login to GitHub Container Registry (GHCR)
+      # Step 6: Login to GitHub Container Registry (GHCR)
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -50,14 +59,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.MY_PAT_TOKEN }}
 
-      # Step 5: Set lowercase image name
+      # Step 7: Set lowercase image name
       - name: Set lowercase image name
         id: set_image_name
         run: |
           IMAGE_NAME="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
           echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
-      # Step 6: Build and Push Multi-Architecture Docker Image
+      # Step 8: Build and Push Multi-Architecture Docker Image
       - name: Build and Push Multi-Arch Docker Image
         uses: docker/build-push-action@v6
         with:
@@ -66,7 +75,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           push: true
           tags: |
-            ${{ steps.set_image_name.outputs.image_name }}:${{ env.VERSION }}
+            ${{ steps.set_image_name.outputs.image_name }}:${{ steps.read_version.outputs.version }}
             ${{ steps.set_image_name.outputs.image_name }}:latest
           no-cache: true
           provenance: false

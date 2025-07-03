@@ -2,6 +2,15 @@ name: Release Drafter
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -25,6 +34,31 @@ jobs:
       - name: Print version
         run: |
           echo "Version: ${{ steps.read_version.outputs.version }}"
+
+      - name: Delete existing tag and release if exists
+        run: |
+          TAG_NAME="v${{ steps.read_version.outputs.version }}"
+          echo "Checking if tag $TAG_NAME exists..."
+          
+          # Check if tag exists locally and delete it
+          if git tag -l | grep -q "^${TAG_NAME}$"; then
+            echo "Deleting local tag $TAG_NAME"
+            git tag -d "$TAG_NAME"
+          fi
+          
+          # Check if tag exists on remote and delete it
+          if git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
+            echo "Deleting remote tag $TAG_NAME"
+            git push origin --delete "$TAG_NAME" || true
+          fi
+          
+          # Check if release exists and delete it
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Deleting existing release $TAG_NAME"
+            gh release delete "$TAG_NAME" --yes || true
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: release-drafter/release-drafter@v6
         id: release
